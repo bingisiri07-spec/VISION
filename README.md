@@ -30,7 +30,7 @@ Vision aims to bridge that gap by using artificial intelligence to help users:
 - Frontend: React
 - Backend & Database: Supabase
 - AI: Groq
-- Development: Lovable + VS Code
+- Development: Anti-Gravity + VS Code
 - Version Control: Git & GitHub
 
 🎯 Vision
