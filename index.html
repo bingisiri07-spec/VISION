@@ -1,12 +1,1635 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VISION</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISION &mdash; Turning Problems into Possibilities</title>
+  <meta name="description" content="VISION helps people explore real-world problems, discover AI-powered solutions, and turn ideas into possibilities.">
+
+  <style>
+    /* ==========================================================================
+       1. GLOBAL RESET & DESIGN VARIABLES
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Space Palette matching reference image */
+      --bg-space: #02050e;
+      --bg-space-dark: #010308;
+      --color-electric-blue: #1d72fe;
+      --color-electric-blue-hover: #297cff;
+      --color-cyan-glow: #38bdf8;
+      --color-cyan-bright: #67e8f9;
+      --color-cyan-soft: #7dd3fc;
+      
+      --text-white: #ffffff;
+      --text-silver: #dbeafe;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --text-eyebrow: #628bb3;
+
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg-space);
+      color: var(--text-white);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      color: var(--text-white);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 3rem;
+    }
+
+    /* ==========================================================================
+       2. SVG SPACE BACKDROP (PLANETARY HORIZON, NEBULA & STARS)
+       ========================================================================== */
+    .space-canvas-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at 75% 45%, #071536 0%, #030717 45%, #01030a 85%);
+    }
+
+    .space-canvas-wrapper svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Animated subtle star twinkle */
+    .twinkle-star {
+      animation: starPulse 4s ease-in-out infinite alternate;
+    }
+    .twinkle-star-2 {
+      animation: starPulse 6s ease-in-out infinite alternate-reverse;
+      animation-delay: 1.5s;
+    }
+
+    @keyframes starPulse {
+      0% { opacity: 0.35; transform: scale(0.95); }
+      50% { opacity: 0.95; transform: scale(1.15); }
+      100% { opacity: 0.55; transform: scale(1); }
+    }
+
+    /* Planetary rim light pulsation */
+    .atmospheric-glow {
+      animation: atmosphereBreathe 7s ease-in-out infinite alternate;
+    }
+
+    @keyframes atmosphereBreathe {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 0.85; }
+    }
+
+    /* ==========================================================================
+       3. HEADER & NAVIGATION
+       ========================================================================== */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      padding: 2.25rem 0;
+      transition: var(--transition);
+      background: linear-gradient(180deg, rgba(2, 5, 14, 0.85) 0%, rgba(2, 5, 14, 0) 100%);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Brand Logo VISION (Text-only, no star icon before logo) */
+    .brand-logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.35em;
+      color: #ffffff;
+      text-transform: uppercase;
+      transition: var(--transition);
+      display: inline-block;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .brand-logo:hover {
+      text-shadow: 0 0 28px rgba(56, 189, 248, 0.8);
+      color: #ffffff;
+    }
+
+    /* Navigation Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.75rem;
+      list-style: none;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: var(--transition);
+      padding: 0.5rem 0;
+      display: inline-block;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-link:hover {
+      color: #ffffff;
+    }
+
+    /* Active 'Home' indicator underline from reference image */
+    .nav-link.active {
+      color: #ffffff;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      background: var(--color-cyan-glow);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--color-cyan-glow);
+    }
+
+    /* Top Right 'Get Started' Pill Button */
+    .btn-header-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.65rem 1.45rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #ffffff;
+      border-radius: 9999px;
+      background: rgba(8, 18, 45, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: var(--transition);
+      letter-spacing: 0.03em;
+    }
+
+    .btn-header-cta svg {
+      width: 15px;
+      height: 15px;
+      transition: transform 0.25s ease;
+    }
+
+    .btn-header-cta:hover {
+      background: rgba(18, 40, 95, 0.85);
+      border-color: var(--color-cyan-bright);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-header-cta:hover svg {
+      transform: translateX(3px);
+    }
+
+    /* Mobile Menu Toggle (Pure CSS) */
+    .menu-toggle-checkbox {
+      display: none;
+    }
+
+    .menu-toggle-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 28px;
+      height: 20px;
+      cursor: pointer;
+      z-index: 101;
+    }
+
+    .menu-toggle-btn span {
+      display: block;
+      height: 2px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 2px;
+      transition: var(--transition);
+    }
+
+    /* ==========================================================================
+       4. HERO SECTION (100% FAITHFUL TO THE REFERENCE IMAGE)
+       ========================================================================== */
+    .hero-viewport {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 9.5rem 0 4.5rem;
+      z-index: 1;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 52% 48%;
+      align-items: center;
+      min-height: calc(100vh - 14rem);
+    }
+
+    .hero-content {
+      max-width: 580px;
+    }
+
+    /* Eyebrow: IDEAS + ANALYSIS + SOLUTIONS + IMPACT */
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--text-eyebrow);
+      margin-bottom: 1.25rem;
+    }
+
+    .eyebrow-plus {
+      color: var(--color-cyan-glow);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    /* Huge Hero Title: VISION */
+    .hero-giant-title {
+      font-size: clamp(3.75rem, 7.5vw, 6.25rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(180deg, #ffffff 0%, #d8ecff 35%, #76baff 70%, #3095fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 35px rgba(48, 149, 250, 0.35));
+    }
+
+    /* Secondary Hero Heading: Turning Problems into Possibilities. */
+    .hero-subheading {
+      font-size: clamp(1.85rem, 3.4vw, 2.75rem);
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .highlight-possibilities {
+      color: #38bdf8;
+      background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+
+    /* Supporting Paragraph */
+    .hero-description {
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--text-muted);
+      margin-bottom: 2.75rem;
+      max-width: 500px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    /* Buttons Row: Start Your Journey & Watch How It Works */
+    .hero-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      margin-bottom: 4.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Primary Pill Button */
+    .btn-start-journey {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.95rem 2.2rem;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: var(--color-electric-blue);
+      border-radius: 9999px;
+      transition: var(--transition);
+      box-shadow: 0 0 30px rgba(29, 114, 254, 0.65), 0 0 50px rgba(14, 165, 233, 0.3);
+      letter-spacing: 0.02em;
+    }
+
+    .btn-start-journey:hover {
+      background: var(--color-electric-blue-hover);
+      box-shadow: 0 0 45px rgba(29, 114, 254, 0.9), 0 0 70px rgba(14, 165, 233, 0.45);
+      transform: translateY(-2px);
+    }
+
+    .btn-start-journey svg {
+      width: 17px;
+      height: 17px;
+      transition: transform 0.25s ease;
+    }
+
+    .btn-start-journey:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* Secondary 'Watch How It Works' Play Button */
+    .btn-watch-works {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.9rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--color-cyan-soft);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .play-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(14, 30, 68, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-cyan-glow);
+      transition: var(--transition);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+    }
+
+    .play-icon-circle svg {
+      width: 15px;
+      height: 15px;
+      margin-left: 2px;
+      fill: currentColor;
+    }
+
+    .btn-watch-works:hover {
+      color: #ffffff;
+    }
+
+    .btn-watch-works:hover .play-icon-circle {
+      background: rgba(29, 114, 254, 0.45);
+      border-color: var(--color-cyan-bright);
+      color: #ffffff;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+      transform: scale(1.06);
+    }
+
+    /* ==========================================================================
+       5. HERO FOOTER: THREE FEATURE HIGHLIGHTS & SCROLL DOWN
+       ========================================================================== */
+    .hero-bottom-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .feature-highlights-bar {
+      display: flex;
+      align-items: center;
+      gap: 3.5rem;
+      flex-wrap: wrap;
+    }
+
+    .feature-micro-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: var(--transition);
+    }
+
+    .feature-micro-item:hover {
+      transform: translateY(-2px);
+    }
+
+    .micro-icon-wrap {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-cyan-glow);
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+    }
+
+    .micro-icon-wrap svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .micro-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .micro-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .micro-subtext {
+      font-size: 0.825rem;
+      color: var(--text-dim);
+      letter-spacing: 0.01em;
+    }
+
+    /* SCROLL DOWN Indicator (Bottom Right) */
+    .scroll-down-widget {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      transition: var(--transition);
+      cursor: pointer;
+      padding-bottom: 0.25rem;
+    }
+
+    .scroll-down-widget:hover {
+      color: var(--color-cyan-glow);
+    }
+
+    .scroll-down-line {
+      width: 1px;
+      height: 34px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.6) 0%, rgba(56, 189, 248, 0.1) 100%);
+      position: relative;
+    }
+
+    .scroll-down-chevron {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      animation: chevronBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes chevronBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+
+    /* ==========================================================================
+       6. EXTENDED SECTIONS: FEATURES, ABOUT & CONTACT
+       ========================================================================== */
+    .section-wrap {
+      position: relative;
+      padding: 7.5rem 0;
+      z-index: 1;
+    }
+
+    .section-header-center {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 4.5rem;
+    }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-cyan-glow);
+      margin-bottom: 0.85rem;
+    }
+
+    .section-heading-lg {
+      font-size: clamp(2rem, 3.5vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtext {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    /* Detailed Features Grid */
+    .cards-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .glass-card {
+      background: rgba(6, 14, 38, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.16);
+      border-radius: 20px;
+      padding: 2.75rem 2.25rem;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--color-cyan-glow), transparent);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .glass-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(10, 22, 58, 0.8);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.15);
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(29, 114, 254, 0.18);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-cyan-glow);
+      margin-bottom: 1.75rem;
+      transition: var(--transition);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .glass-card:hover .card-icon-box {
+      background: rgba(29, 114, 254, 0.35);
+      color: #ffffff;
+      transform: scale(1.08);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+    }
+
+    .card-icon-box svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.85rem;
+      color: #ffffff;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.975rem;
+      line-height: 1.7;
+      margin-bottom: 1.75rem;
+      flex-grow: 1;
+    }
+
+    .card-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      list-style: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 1.25rem;
+    }
+
+    .card-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--color-cyan-glow);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    /* About Section */
+    .about-card-container {
+      background: linear-gradient(135deg, rgba(8, 18, 48, 0.75) 0%, rgba(3, 7, 20, 0.9) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 28px;
+      padding: 4.5rem 3.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .about-split {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .about-text h3 {
+      font-size: 2.15rem;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 1.35rem;
+    }
+
+    .about-text p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      margin-bottom: 1.75rem;
+    }
+
+    .workflow-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .workflow-step {
+      display: flex;
+      gap: 1.25rem;
+      background: rgba(2, 6, 18, 0.55);
+      border: 1px solid rgba(56, 189, 248, 0.14);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      transition: var(--transition);
+    }
+
+    .workflow-step:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateX(5px);
+      background: rgba(6, 16, 44, 0.7);
+    }
+
+    .workflow-num {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--color-cyan-glow);
+      min-width: 2.2rem;
+    }
+
+    .workflow-title {
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .workflow-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Transformation Showcase Terminal */
+    .terminal-box {
+      background: rgba(2, 6, 18, 0.88);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .terminal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 1.15rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .terminal-dots-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ef4444; }
+    .terminal-dot.yellow { background: #f59e0b; }
+    .terminal-dot.green { background: #10b981; }
+
+    .terminal-badge {
+      font-size: 0.75rem;
+      font-family: monospace;
+      color: var(--color-cyan-bright);
+      letter-spacing: 0.05em;
+    }
+
+    .terminal-stage-card {
+      margin-bottom: 1.15rem;
+      padding: 1.15rem;
+      border-radius: 12px;
+      background: rgba(10, 20, 48, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .terminal-stage-tag {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .tag-problem { color: #f87171; }
+    .tag-ai { color: var(--color-cyan-bright); }
+    .tag-possibility { color: #34d399; }
+
+    .terminal-stage-text {
+      font-size: 0.925rem;
+      color: var(--text-white);
+      line-height: 1.5;
+    }
+
+    /* Contact CTA Card */
+    .cta-glow-box {
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, rgba(29, 114, 254, 0.28) 0%, rgba(4, 10, 28, 0.9) 70%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 28px;
+      padding: 5rem 2rem;
+      box-shadow: 0 0 70px rgba(29, 114, 254, 0.2);
+    }
+
+    .cta-glow-box h2 {
+      font-size: clamp(2.2rem, 4.2vw, 3.2rem);
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    .cta-glow-box p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 2.75rem;
+      line-height: 1.7;
+    }
+
+    .cta-form {
+      display: flex;
+      max-width: 520px;
+      margin: 0 auto;
+      gap: 0.75rem;
+    }
+
+    .cta-input {
+      flex-grow: 1;
+      padding: 1rem 1.5rem;
+      border-radius: 9999px;
+      background: rgba(2, 6, 18, 0.75);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #ffffff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .cta-input:focus {
+      border-color: var(--color-cyan-glow);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+    }
+
+    .cta-submit-btn {
+      padding: 1rem 2rem;
+      border-radius: 9999px;
+      background: var(--color-electric-blue);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: var(--transition);
+      white-space: nowrap;
+      box-shadow: 0 0 25px rgba(29, 114, 254, 0.5);
+    }
+
+    .cta-submit-btn:hover {
+      background: var(--color-electric-blue-hover);
+      box-shadow: 0 0 35px rgba(29, 114, 254, 0.8);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       7. FOOTER
+       ========================================================================== */
+    .site-footer {
+      border-top: 1px solid rgba(56, 189, 248, 0.12);
+      padding: 4.5rem 0 2.5rem;
+      position: relative;
+      z-index: 1;
+      background: rgba(2, 5, 14, 0.9);
+    }
+
+    .footer-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 3.5rem;
+      flex-wrap: wrap;
+      gap: 2.5rem;
+    }
+
+    .footer-brand-col {
+      max-width: 380px;
+    }
+
+    .footer-brand-col .brand-logo {
+      margin-bottom: 1.15rem;
+    }
+
+    .footer-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .footer-columns {
+      display: flex;
+      gap: 4rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-col-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--color-cyan-glow);
+      margin-bottom: 1.25rem;
+    }
+
+    .footer-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-nav-list a {
+      font-size: 0.925rem;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .footer-nav-list a:hover {
+      color: #ffffff;
+      padding-left: 4px;
+    }
+
+    .footer-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* ==========================================================================
+       8. RESPONSIVE BREAKPOINTS
+       ========================================================================== */
+    @media (max-width: 1100px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-content {
+        max-width: 100%;
+      }
+      .cards-grid-3 {
+        grid-template-columns: 1fr;
+        max-width: 540px;
+        margin: 0 auto;
+      }
+      .about-split {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .hero-bottom-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2.5rem;
+      }
+      .scroll-down-widget {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 1.5rem;
+      }
+
+      .site-header {
+        padding: 1.5rem 0;
+      }
+
+      .menu-toggle-btn {
+        display: flex;
+      }
+
+      .btn-header-cta {
+        display: none;
+      }
+
+      .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 80%;
+        max-width: 320px;
+        height: 100vh;
+        background: rgba(2, 5, 14, 0.98);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-left: 1px solid rgba(56, 189, 248, 0.2);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        transition: right 0.4s ease;
+        padding: 2rem;
+        z-index: 100;
+      }
+
+      .menu-toggle-checkbox:checked ~ .nav-links {
+        right: 0;
+      }
+
+      .menu-toggle-checkbox:checked ~ .menu-toggle-btn span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 6px);
+      }
+      .menu-toggle-checkbox:checked ~ .menu-toggle-btn span:nth-child(2) {
+        opacity: 0;
+      }
+      .menu-toggle-checkbox:checked ~ .menu-toggle-btn span:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -7px);
+      }
+
+      .hero-eyebrow {
+        font-size: 0.65rem;
+        letter-spacing: 0.18em;
+      }
+
+      .feature-highlights-bar {
+        gap: 1.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cta-form {
+        flex-direction: column;
+      }
+
+      .cta-submit-btn {
+        width: 100%;
+      }
+
+      .footer-flex {
+        flex-direction: column;
+        gap: 2rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>VISION</h1>
-    <p>Problems to possibilities</p>
+
+  <!-- ==========================================================================
+       SPACE CANVAS: FAITHFUL RECREATION OF THE PLANETARY HORIZON, NEBULA & STARS
+       ========================================================================== -->
+  <div class="space-canvas-wrapper" aria-hidden="true">
+    <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Blue cosmic nebula gradients -->
+        <radialGradient id="nebulaCore" cx="72%" cy="42%" r="45%">
+          <stop offset="0%" stop-color="#1e40af" stop-opacity="0.55" />
+          <stop offset="35%" stop-color="#0284c7" stop-opacity="0.32" />
+          <stop offset="70%" stop-color="#0369a1" stop-opacity="0.12" />
+          <stop offset="100%" stop-color="#02050e" stop-opacity="0" />
+        </radialGradient>
+
+        <radialGradient id="nebulaWisps" cx="64%" cy="58%" r="40%">
+          <stop offset="0%" stop-color="#0369a1" stop-opacity="0.45" />
+          <stop offset="45%" stop-color="#1e3a8a" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#02050e" stop-opacity="0" />
+        </radialGradient>
+
+        <radialGradient id="brightStarGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+          <stop offset="20%" stop-color="#7dd3fc" stop-opacity="0.8" />
+          <stop offset="50%" stop-color="#0284c7" stop-opacity="0.35" />
+          <stop offset="100%" stop-color="#02050e" stop-opacity="0" />
+        </radialGradient>
+
+        <!-- Planet Body Gradient (Deep blue shadowed sphere surface) -->
+        <radialGradient id="planetBodyGrad" cx="95%" cy="30%" r="90%">
+          <stop offset="0%" stop-color="#0b1e42" />
+          <stop offset="25%" stop-color="#05102a" />
+          <stop offset="60%" stop-color="#020614" />
+          <stop offset="100%" stop-color="#01030a" />
+        </radialGradient>
+
+        <!-- Atmospheric Rim Glow Gradients -->
+        <linearGradient id="rimAtmosphereLight" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#0284c7" stop-opacity="0.4" />
+          <stop offset="45%" stop-color="#38bdf8" stop-opacity="0.95" />
+          <stop offset="75%" stop-color="#93c5fd" stop-opacity="1" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="1" />
+        </linearGradient>
+
+        <!-- Multi-stage Blur Filters -->
+        <filter id="blurSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="70" />
+        </filter>
+        <filter id="blurAtmosphere" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="22" />
+        </filter>
+        <filter id="blurCyanRim" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" />
+        </filter>
+      </defs>
+
+      <!-- Background Base -->
+      <rect width="100%" height="100%" fill="#02050e" />
+
+      <!-- Deep Blue Nebula Formations -->
+      <ellipse cx="1180" cy="400" rx="420" ry="240" fill="url(#nebulaCore)" transform="rotate(-28 1180 400)" filter="url(#blurSoft)" />
+      <ellipse cx="980" cy="560" rx="360" ry="180" fill="url(#nebulaWisps)" transform="rotate(-32 980 560)" filter="url(#blurSoft)" />
+      <ellipse cx="1320" cy="220" rx="280" ry="140" fill="url(#nebulaCore)" transform="rotate(-15 1320 220)" filter="url(#blurSoft)" />
+
+      <!-- Pinpoint Stars across the sky -->
+      <g fill="#ffffff" opacity="0.75">
+        <circle cx="150" cy="180" r="1.1" />
+        <circle cx="280" cy="90" r="1.4" class="twinkle-star" />
+        <circle cx="420" cy="240" r="0.9" />
+        <circle cx="560" cy="130" r="1.3" />
+        <circle cx="690" cy="310" r="0.8" />
+        <circle cx="820" cy="190" r="1.5" class="twinkle-star-2" />
+        <circle cx="950" cy="95" r="1.2" />
+        <circle cx="1080" cy="260" r="1.3" />
+        <circle cx="1210" cy="110" r="1.1" />
+        <circle cx="1340" cy="70" r="1.6" class="twinkle-star" />
+        <circle cx="1470" cy="190" r="1.2" />
+        <circle cx="210" cy="420" r="1.3" />
+        <circle cx="340" cy="560" r="0.8" />
+        <circle cx="490" cy="480" r="1.2" />
+        <circle cx="630" cy="620" r="1.1" />
+        <circle cx="760" cy="470" r="1.4" class="twinkle-star" />
+        <circle cx="890" cy="380" r="1.2" />
+        <circle cx="1020" cy="520" r="1.3" />
+        <circle cx="1280" cy="330" r="1.1" />
+        <circle cx="1420" cy="280" r="1.4" />
+        <circle cx="170" cy="740" r="1.1" />
+        <circle cx="290" cy="850" r="1.3" class="twinkle-star-2" />
+        <circle cx="450" cy="790" r="1.2" />
+        <circle cx="590" cy="880" r="1.4" />
+        <circle cx="710" cy="730" r="1.0" />
+      </g>
+
+      <!-- Prominent 4-Point Star in Nebula (matching reference image at x~74%, y~45%) -->
+      <g transform="translate(1190, 455)" class="twinkle-star">
+        <circle cx="0" cy="0" r="28" fill="url(#brightStarGlow)" />
+        <path d="M 0 -18 Q 0 0 18 0 Q 0 0 0 18 Q 0 0 -18 0 Q 0 0 0 -18 Z" fill="#ffffff" />
+        <circle cx="0" cy="0" r="2.2" fill="#ffffff" />
+      </g>
+
+      <!-- Another soft accent star at lower mid (matching reference image) -->
+      <g transform="translate(790, 705)" class="twinkle-star-2">
+        <circle cx="0" cy="0" r="16" fill="url(#brightStarGlow)" opacity="0.75" />
+        <circle cx="0" cy="0" r="1.8" fill="#ffffff" />
+      </g>
+
+      <!-- ======================================================================
+           THE GIANT PLANET (Right side curvature ascending from bottom to upper-right)
+           Curve path starts at bottom center (850, 1000) and arcs to (1600, 340)
+           ====================================================================== -->
+      <!-- Wide diffuse atmospheric haze extending outward into space -->
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340" 
+        fill="none" 
+        stroke="#1d4ed8" 
+        stroke-width="70" 
+        opacity="0.4" 
+        filter="url(#blurSoft)"
+        class="atmospheric-glow"
+      />
+
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340" 
+        fill="none" 
+        stroke="#0284c7" 
+        stroke-width="36" 
+        opacity="0.65" 
+        filter="url(#blurAtmosphere)"
+        class="atmospheric-glow"
+      />
+
+      <!-- Planet Solid Body with Spherical Shading -->
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340 L 1600 1000 Z" 
+        fill="url(#planetBodyGrad)" 
+      />
+
+      <!-- Subtle planetary surface terrain & crater texture details -->
+      <g opacity="0.32" fill="#0b1b3b">
+        <ellipse cx="1250" cy="740" rx="90" ry="40" transform="rotate(-30 1250 740)" filter="url(#blurAtmosphere)" />
+        <ellipse cx="1440" cy="580" rx="140" ry="60" transform="rotate(-32 1440 580)" filter="url(#blurAtmosphere)" />
+        <ellipse cx="1120" cy="890" rx="80" ry="35" transform="rotate(-28 1120 890)" filter="url(#blurAtmosphere)" />
+        <ellipse cx="1510" cy="820" rx="160" ry="70" transform="rotate(-25 1510 820)" filter="url(#blurAtmosphere)" />
+      </g>
+
+      <!-- Brilliant Cyan/Electric-Blue Atmospheric Rim Light Curve -->
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340" 
+        fill="none" 
+        stroke="url(#rimAtmosphereLight)" 
+        stroke-width="14" 
+        opacity="0.85" 
+        filter="url(#blurCyanRim)" 
+        class="atmospheric-glow"
+      />
+
+      <!-- Razor-sharp intense sunlight rim edge -->
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340" 
+        fill="none" 
+        stroke="#e0f2fe" 
+        stroke-width="3" 
+        opacity="0.95" 
+      />
+      <path 
+        d="M 850 1000 C 990 830, 1220 580, 1600 340" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="1.2" 
+        opacity="1" 
+      />
+    </svg>
+  </div>
+
+  <!-- ==========================================================================
+       HEADER & NAVIGATION
+       ========================================================================== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <!-- Text Logo ONLY (No icon before logo) -->
+      <a href="#home" class="brand-logo">VISION</a>
+
+      <!-- Mobile Menu Toggle Checkbox -->
+      <input type="checkbox" id="nav-toggle" class="menu-toggle-checkbox" aria-label="Toggle navigation">
+      <label for="nav-toggle" class="menu-toggle-btn">
+        <span></span>
+        <span></span>
+        <span></span>
+      </label>
+
+      <!-- Center Navigation Links -->
+      <ul class="nav-links">
+        <li class="nav-item"><a href="#home" class="nav-link active">Home</a></li>
+        <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
+        <li class="nav-item"><a href="#features" class="nav-link">Features</a></li>
+        <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
+      </ul>
+
+      <!-- Right 'Get Started →' Pill Button -->
+      <a href="#contact" class="btn-header-cta">
+        Get Started
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN HERO SECTION (FAITHFUL TO REFERENCE IMAGE)
+       ========================================================================== -->
+  <main>
+    <section id="home" class="hero-viewport">
+      <div class="container">
+        <div class="hero-grid">
+          <!-- Left Content Column -->
+          <div class="hero-content">
+            <!-- Eyebrow Tag -->
+            <div class="hero-eyebrow">
+              IDEAS <span class="eyebrow-plus">+</span> ANALYSIS <span class="eyebrow-plus">+</span> SOLUTIONS <span class="eyebrow-plus">+</span> IMPACT
+            </div>
+
+            <!-- Giant Hero Logo Word -->
+            <div class="hero-giant-title">VISION</div>
+
+            <!-- Secondary Heading -->
+            <h1 class="hero-subheading">
+              Turning Problems into<br>
+              <span class="highlight-possibilities">Possibilities.</span>
+            </h1>
+
+            <!-- Supporting Paragraph -->
+            <p class="hero-description">
+              Analyze. Plan. Build. VISION helps you understand real-world problems, explore solutions, and turn your ideas into actionable plans &mdash; with the power of AI.
+            </p>
+
+            <!-- Action Buttons Row -->
+            <div class="hero-actions-row">
+              <!-- Primary Button -->
+              <a href="#features" class="btn-start-journey">
+                Start Your Journey
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+
+              <!-- Secondary 'Watch How It Works' Play Button -->
+              <a href="#about" class="btn-watch-works">
+                <div class="play-icon-circle">
+                  <svg viewBox="0 0 24 24">
+                    <polygon points="9.5 7.5 16.5 12 9.5 16.5 9.5 7.5" />
+                  </svg>
+                </div>
+                <span>Watch How It Works</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             BOTTOM HERO BAR: THREE FEATURE HIGHLIGHTS & SCROLL DOWN
+             ==================================================================== -->
+        <div class="hero-bottom-row">
+          <!-- Three Feature Micro-Items -->
+          <div class="feature-highlights-bar">
+            <!-- Feature 1: AI-Powered -->
+            <div class="feature-micro-item">
+              <div class="micro-icon-wrap">
+                <!-- 4-point sparkle star icon matching reference image -->
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+                </svg>
+              </div>
+              <div class="micro-info">
+                <div class="micro-title">AI-Powered</div>
+                <div class="micro-subtext">Smarter insights</div>
+              </div>
+            </div>
+
+            <!-- Feature 2: Real-World Focus -->
+            <div class="feature-micro-item">
+              <div class="micro-icon-wrap">
+                <!-- Lightning bolt icon matching reference image -->
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </div>
+              <div class="micro-info">
+                <div class="micro-title">Real-World Focus</div>
+                <div class="micro-subtext">Actual solutions</div>
+              </div>
+            </div>
+
+            <!-- Feature 3: Future Driven -->
+            <div class="feature-micro-item">
+              <div class="micro-icon-wrap">
+                <!-- Seedling sprout icon matching reference image -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22V10" />
+                  <path d="M12 10C12 5.5 16.5 4 19 4C19 6.5 17.5 11 12 10Z" />
+                  <path d="M12 14C12 10.5 7.5 9.5 5 9.5C5 11.5 6.5 15 12 14Z" />
+                </svg>
+              </div>
+              <div class="micro-info">
+                <div class="micro-title">Future Driven</div>
+                <div class="micro-subtext">Built for what's next</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: SCROLL DOWN indicator with vertical line & arrow -->
+          <a href="#features" class="scroll-down-widget" aria-label="Scroll down">
+            <span>SCROLL DOWN</span>
+            <div class="scroll-down-line"></div>
+            <svg class="scroll-down-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         DETAILED FEATURES SECTION
+         ========================================================================== -->
+    <section id="features" class="section-wrap">
+      <div class="container">
+        <div class="section-header-center">
+          <span class="section-tag">Key Capabilities</span>
+          <h2 class="section-heading-lg">Engineered to Transform Obstacles</h2>
+          <p class="section-subtext">
+            Explore how VISION unites intelligent analysis with real-world execution to elevate raw ideas from concept to reality.
+          </p>
+        </div>
+
+        <div class="cards-grid-3">
+          <!-- Feature 1 -->
+          <div class="glass-card">
+            <div class="card-icon-box">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+              </svg>
+            </div>
+            <h3 class="card-title">AI-Powered</h3>
+            <p class="card-desc">
+              Harness advanced artificial intelligence algorithms to deconstruct intricate challenges, illuminate root causes, and generate high-impact opportunities in seconds.
+            </p>
+            <ul class="card-pills">
+              <li class="card-pill">Root Cause Discovery</li>
+              <li class="card-pill">Neural Ideation</li>
+              <li class="card-pill">Cognitive Synthesis</li>
+            </ul>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="glass-card">
+            <div class="card-icon-box">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <h3 class="card-title">Real-World Focus</h3>
+            <p class="card-desc">
+              Grounded in genuine human and business dilemmas. VISION bridges the divide between abstract pain points and concrete, actionable frameworks you can execute today.
+            </p>
+            <ul class="card-pills">
+              <li class="card-pill">Tangible Impact</li>
+              <li class="card-pill">Feasibility Testing</li>
+              <li class="card-pill">Actionable Roadmaps</li>
+            </ul>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="glass-card">
+            <div class="card-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22V10" />
+                <path d="M12 10C12 5.5 16.5 4 19 4C19 6.5 17.5 11 12 10Z" />
+                <path d="M12 14C12 10.5 7.5 9.5 5 9.5C5 11.5 6.5 15 12 14Z" />
+              </svg>
+            </div>
+            <h3 class="card-title">Future Driven</h3>
+            <p class="card-desc">
+              Transform fleeting thoughts into resilient, forward-looking initiatives. Build scalable products and visionary concepts engineered to thrive through future shifts.
+            </p>
+            <ul class="card-pills">
+              <li class="card-pill">Scalable Architecture</li>
+              <li class="card-pill">Continuous Growth</li>
+              <li class="card-pill">Longevity Design</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         ABOUT SECTION
+         ========================================================================== -->
+    <section id="about" class="section-wrap">
+      <div class="container">
+        <div class="about-card-container">
+          <div class="about-split">
+            <div class="about-text">
+              <span class="section-tag">The Philosophy</span>
+              <h3>Every problem can be the beginning of a possibility.</h3>
+              <p>
+                People encounter challenges every day, but defining the actual problem and structuring a viable path forward is often the hardest hurdle.
+              </p>
+              <p>
+                VISION acts as your cognitive co-pilot. We don't just supply quick answers &mdash; we guide you through structured problem deconstruction to unlock solutions worth building.
+              </p>
+
+              <div class="workflow-steps-list">
+                <div class="workflow-step">
+                  <div class="workflow-num">01</div>
+                  <div>
+                    <div class="workflow-title">Identify & Understand</div>
+                    <div class="workflow-desc">Pinpoint real problems and uncover their underlying root causes.</div>
+                  </div>
+                </div>
+
+                <div class="workflow-step">
+                  <div class="workflow-num">02</div>
+                  <div>
+                    <div class="workflow-title">Analyze & Brainstorm</div>
+                    <div class="workflow-desc">Synthesize innovative AI-driven perspectives and evaluate feasibility.</div>
+                  </div>
+                </div>
+
+                <div class="workflow-step">
+                  <div class="workflow-num">03</div>
+                  <div>
+                    <div class="workflow-title">Build & Realize</div>
+                    <div class="workflow-desc">Turn validated concepts into actionable projects, products, and impact.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transformation Showcase Terminal Visual -->
+            <div class="terminal-box" aria-label="Transformation preview example">
+              <div class="terminal-top">
+                <div class="terminal-dots-row">
+                  <div class="terminal-dot red"></div>
+                  <div class="terminal-dot yellow"></div>
+                  <div class="terminal-dot green"></div>
+                </div>
+                <div class="terminal-badge">VISION_CORE // ACTIVE</div>
+              </div>
+
+              <div class="terminal-stage-card">
+                <div class="terminal-stage-tag tag-problem">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  01. The Problem
+                </div>
+                <div class="terminal-stage-text">
+                  Local communities struggle to redistribute surplus fresh food before it goes to waste.
+                </div>
+              </div>
+
+              <div class="terminal-stage-card">
+                <div class="terminal-stage-tag tag-ai">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  02. AI Synthesis
+                </div>
+                <div class="terminal-stage-text">
+                  Synthesizing route optimization, shelf-life forecasts, and micro-distribution incentives...
+                </div>
+              </div>
+
+              <div class="terminal-stage-card">
+                <div class="terminal-stage-tag tag-possibility">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  03. The Possibility
+                </div>
+                <div class="terminal-stage-text">
+                  A decentralized autonomous food rescue network matching grocery surplus directly with nearby shelters in real time.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         CONTACT / GET STARTED SECTION
+         ========================================================================== -->
+    <section id="contact" class="section-wrap">
+      <div class="container">
+        <div class="cta-glow-box">
+          <span class="section-tag">Get Started</span>
+          <h2>Ready to Explore Your Next Breakthrough?</h2>
+          <p>
+            Join the community of innovators and builders transforming everyday challenges into world-changing solutions.
+          </p>
+
+          <form class="cta-form" onsubmit="event.preventDefault(); alert('Thank you for connecting with VISION! We will be in touch soon.');">
+            <input 
+              type="email" 
+              class="cta-input" 
+              placeholder="Enter your email address" 
+              required 
+              aria-label="Email address"
+            >
+            <button type="submit" class="cta-submit-btn">
+              Get Started
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       FOOTER
+       ========================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-flex">
+        <div class="footer-brand-col">
+          <a href="#home" class="brand-logo">VISION</a>
+          <p class="footer-desc">
+            Turning Problems into Possibilities with AI. Empowering thinkers and builders worldwide.
+          </p>
+        </div>
+
+        <div class="footer-columns">
+          <div>
+            <div class="footer-col-title">Navigation</div>
+            <ul class="footer-nav-list">
+              <li><a href="#home">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="footer-col-title">Connect</div>
+            <ul class="footer-nav-list">
+              <li><a href="#contact">Get Started</a></li>
+              <li><a href="#features">Explore AI</a></li>
+              <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <p>&copy; 2026 VISION. All rights reserved.</p>
+        <p>Crafted for the future.</p>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>
