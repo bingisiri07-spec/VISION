@@ -103,6 +103,14 @@ Founder Project Context:
 
 Always reference the founder's specific project context when relevant. Be concise, tactical, honest about uncertainty, and prioritize practical next steps over generic buzzwords.`;
 
+  const recentHistory = (projectState.chatHistory || [])
+    .slice(-10)
+    .filter((m) => m.id !== 'welcome')
+    .map((m) => ({
+      role: m.sender === 'assistant' ? 'assistant' : 'user',
+      content: m.text,
+    }));
+
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -113,6 +121,7 @@ Always reference the founder's specific project context when relevant. Be concis
       model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
+        ...recentHistory,
         { role: 'user', content: userMessage }
       ],
       temperature: 0.6,

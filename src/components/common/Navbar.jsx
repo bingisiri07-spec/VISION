@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Menu, X, Sparkles, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, Menu, X, Sparkles, LayoutDashboard, User, LogIn, LogOut, Layers } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-export default function Navbar({ activeView, setActiveView, hasActiveProject }) {
+export default function Navbar({
+  activeView,
+  setActiveView,
+  hasActiveProject,
+  onOpenAuthModal,
+  onOpenProjectsModal,
+}) {
+  const { user, profile, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -137,24 +145,84 @@ export default function Navbar({ activeView, setActiveView, hasActiveProject }) 
           </nav>
 
           {/* Action Area */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {hasActiveProject && activeView !== 'journey-dashboard' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {user ? (
+              <>
+                <button
+                  onClick={onOpenProjectsModal}
+                  className="btn-nav-outline"
+                  title="View your cloud ventures"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Layers size={14} color="#38bdf8" />
+                  <span>My Ventures</span>
+                </button>
+
+                {hasActiveProject && activeView !== 'journey-dashboard' && (
+                  <button
+                    onClick={() => setActiveView('journey-dashboard')}
+                    className="btn-nav-outline"
+                    title="Return to your saved project workspace"
+                  >
+                    <LayoutDashboard size={15} color="#38bdf8" />
+                    <span>Workspace</span>
+                  </button>
+                )}
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '9999px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    fontSize: '0.85rem',
+                    color: '#ffffff',
+                  }}
+                  title={user.email}
+                >
+                  <User size={13} color="#38bdf8" />
+                  <span style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {profile?.full_name || user.email.split('@')[0]}
+                  </span>
+                  <button
+                    onClick={signOut}
+                    title="Sign Out"
+                    style={{
+                      color: 'var(--text-dim)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '2px',
+                      marginLeft: '0.2rem',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+                  >
+                    <LogOut size={13} />
+                  </button>
+                </div>
+              </>
+            ) : (
               <button
-                onClick={() => setActiveView('journey-dashboard')}
+                onClick={onOpenAuthModal}
                 className="btn-nav-outline"
-                title="Return to your saved project workspace"
+                style={{ padding: '0.45rem 1rem' }}
               >
-                <LayoutDashboard size={15} color="#38bdf8" />
-                <span>My Project</span>
+                <LogIn size={14} />
+                <span>Sign In</span>
               </button>
             )}
 
             <button
               onClick={() => setActiveView('problem-discovery')}
-              className="btn-nav-outline"
+              className="btn-primary-glow"
+              style={{ padding: '0.5rem 1.15rem', fontSize: '0.85rem' }}
             >
               <span>{activeView === 'landing' ? 'Get Started' : 'New Problem'}</span>
-              <ArrowRight size={15} />
+              <ArrowRight size={14} />
             </button>
 
             {/* Mobile hamburger button */}
@@ -205,6 +273,35 @@ export default function Navbar({ activeView, setActiveView, hasActiveProject }) 
               {item}
             </button>
           ))}
+
+          {user ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenProjectsModal(); }}
+                className="btn-nav-outline"
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                <Layers size={15} />
+                <span>My Ventures</span>
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); signOut(); }}
+                style={{ color: '#ef4444', textAlign: 'center', fontSize: '0.9rem', padding: '0.5rem' }}
+              >
+                Sign Out ({user.email})
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onOpenAuthModal(); }}
+              className="btn-nav-outline"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <LogIn size={15} />
+              <span>Sign In / Create Account</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               setMobileMenuOpen(false);
