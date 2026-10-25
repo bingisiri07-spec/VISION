@@ -40,6 +40,7 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
   const [error, setError] = useState('');
+  const [isFallback, setIsFallback] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState([]);
 
   const handleSubmit = async (e) => {
@@ -49,12 +50,13 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
       return;
     }
     setError('');
+    setIsFallback(false);
     setIsGenerating(true);
 
     const steps = [
-      "Deconstructing problem root causes...",
+      "Connecting to AI service...",
+      "Analyzing problem root causes...",
       "Mapping affected stakeholder incentives...",
-      "Cross-referencing domain constraints & viability...",
       "Synthesizing 3 differentiated startup solutions..."
     ];
 
@@ -65,7 +67,7 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
       if (stepIndex < steps.length) {
         setLoadingStep(steps[stepIndex]);
       }
-    }, 350);
+    }, 700);
 
     try {
       const generatedIdeas = await generateStartupIdeas({
@@ -79,6 +81,9 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
 
       clearInterval(stepInterval);
       setIsGenerating(false);
+
+      // Detect whether the Edge Function succeeded or the static fallback was used
+      setIsFallback(Boolean(generatedIdeas._isFallback));
 
       onIdeasGenerated({
         problem: { domain, problemStatement, affectedAudience, constraints, goals },
@@ -351,6 +356,29 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
               Compare feasibility, revenue mechanics, and select one idea to build your roadmap.
             </p>
           </div>
+
+          {/* Fallback notice — only shown when AI service was unavailable */}
+          {isFallback && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.75rem',
+              background: 'rgba(234, 179, 8, 0.08)',
+              border: '1px solid rgba(234, 179, 8, 0.35)',
+              borderRadius: '10px',
+              color: '#fde68a',
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+            }}>
+              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#facc15' }} />
+              <span>
+                <strong>AI service is currently unavailable.</strong> The ideas below are illustrative examples, not tailored to your specific problem.
+                Your problem statement has been saved. Once the AI service is configured, regenerate to receive genuinely problem-specific startup opportunities.
+              </span>
+            </div>
+          )}
 
           {/* Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>

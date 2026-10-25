@@ -1,8 +1,19 @@
 /**
  * ideaEngine.js
  * Generates tailored, realistic startup ideas based on user problem submissions.
- * Supports both high-quality structured algorithmic intelligence and live Groq API inference.
+ *
+ * Primary path  : Calls the Supabase Edge Function `generate-ideas`, which
+ *                 securely invokes Groq on the server side using a stored secret.
+ *                 The Groq API key is NEVER present in this file or any frontend code.
+ *
+ * Fallback path : If the Edge Function is unavailable (network error, secret not
+ *                 configured, Groq outage), the static template engine below is used.
+ *                 Fallback results are marked with _isFallback: true so the UI can
+ *                 display a clear "AI unavailable" notice instead of presenting
+ *                 hardcoded ideas as real AI output.
  */
+
+import { supabase } from './supabaseClient.js';
 
 export const DOMAIN_CATEGORIES = [
   { id: 'agriculture', name: 'Agriculture & Food Supply', icon: 'Sprout', hint: 'Cold storage, yield loss, supply chain, farmer income' },
@@ -16,27 +27,49 @@ export const DOMAIN_CATEGORIES = [
 /**
  * Deterministic generation engine tailored to category & user problem inputs
  */
-export async function generateStartupIdeas({ domain, problemStatement, affectedAudience, constraints, goals, apiKey }) {
-  // If user provided a Groq API key, attempt real LLM call with fallback
-  if (apiKey && apiKey.trim().startsWith('gsk_')) {
-    try {
-      const groqIdeas = await callGroqForIdeas({ domain, problemStatement, affectedAudience, constraints, goals, apiKey });
-      if (groqIdeas && groqIdeas.length > 0) return groqIdeas;
-    } catch (e) {
-      console.warn("Groq API call failed, falling back to built-in synthesis engine:", e);
+export async function generateStartupIdeas({ domain, problemStatement, affectedAudience, constraints, goals }) {
+  // ---------------------------------------------------------------------------
+  // PRIMARY PATH: Call the Supabase Edge Function (server-side Groq, key secure)
+  // ---------------------------------------------------------------------------
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-ideas', {
+      body: { domain, problemStatement, affectedAudience, constraints, goals },
+    });
+
+    if (error) {
+      // supabase-js wraps HTTP errors — log for debugging, do not expose to UI
+      console.warn('[ideaEngine] Edge Function returned an error, activating fallback:', error?.message);
+    } else if (data?.ideas && Array.isArray(data.ideas) && data.ideas.length > 0) {
+      // SUCCESS: return genuine AI-generated ideas — no _isFallback flag
+      return data.ideas;
+    } else if (data?.error) {
+      // The Edge Function returned a structured error message (e.g. secret not set)
+      console.warn('[ideaEngine] Edge Function error response:', data.error);
     }
+  } catch (networkErr) {
+    // Fetch-level failure (offline, CORS issue, etc.)
+    console.warn('[ideaEngine] Could not reach Edge Function, activating fallback:', networkErr?.message);
   }
 
-  // Built-in intelligent synthesis engine:
-  // Simulate AI thinking delay for realistic UX
+  // ---------------------------------------------------------------------------
+  // FALLBACK PATH: Static template engine
+  // Results are marked _isFallback = true so ProblemDiscovery.jsx can show a
+  // clear "AI unavailable" notice instead of presenting these as AI output.
+  // ---------------------------------------------------------------------------
+
+  // Simulate a brief thinking delay for UX consistency
   await new Promise((r) => setTimeout(r, 1400));
 
   const pLower = problemStatement.toLowerCase();
   const aud = affectedAudience || "Early adopters & underserved users";
 
-  // Category specific templates with dynamic user problem injection
+  // Category-specific fallback templates with dynamic user problem injection.
+  // NOTE: These are illustrative examples, NOT AI-generated output.
+  //       The _isFallback flag on each returned array tells the UI to show an
+  //       "AI unavailable" notice so users are never misled.
+
   if (domain === 'agriculture' || pLower.includes('farm') || pLower.includes('crop') || pLower.includes('food')) {
-    return [
+    const ideas = [
       {
         id: 'idea_agri_1',
         name: 'AgriFreeze Hubs',
@@ -105,10 +138,12 @@ export async function generateStartupIdeas({ domain, problemStatement, affectedA
         ]
       }
     ];
+    ideas._isFallback = true;
+    return ideas;
   }
 
   if (domain === 'healthcare' || pLower.includes('health') || pLower.includes('doctor') || pLower.includes('clinic') || pLower.includes('patient')) {
-    return [
+    const ideas = [
       {
         id: 'idea_health_1',
         name: 'ClinicRoute',
@@ -175,10 +210,12 @@ export async function generateStartupIdeas({ domain, problemStatement, affectedA
         ]
       }
     ];
+    ideas._isFallback = true;
+    return ideas;
   }
 
   if (domain === 'education' || pLower.includes('student') || pLower.includes('school') || pLower.includes('learn') || pLower.includes('skill')) {
-    return [
+    const ideas = [
       {
         id: 'idea_edu_1',
         name: 'SkillForge Lab',
@@ -245,10 +282,12 @@ export async function generateStartupIdeas({ domain, problemStatement, affectedA
         ]
       }
     ];
+    ideas._isFallback = true;
+    return ideas;
   }
 
-  // Fallback / General / Technology / Climate / Transport dynamic generator
-  return [
+  // General / Technology / Climate / Transport fallback
+  const ideas = [
     {
       id: 'idea_gen_1',
       name: 'OmniFlow AI',
@@ -315,8 +354,15 @@ export async function generateStartupIdeas({ domain, problemStatement, affectedA
       ]
     }
   ];
+  ideas._isFallback = true;
+  return ideas;
 }
 
+// ---------------------------------------------------------------------------
+// The callGroqForIdeas function below is intentionally retained for the case
+// where a user supplies their own Groq key via the UI. It is NOT the primary
+// path — the Edge Function is. This function is never invoked by default.
+// ---------------------------------------------------------------------------
 async function callGroqForIdeas({ domain, problemStatement, affectedAudience, constraints, goals, apiKey }) {
   const prompt = `You are a world-class startup builder and product strategist. Analyze this real-world problem and return EXACTLY 3 innovative, viable, realistic startup opportunities as JSON.
 Domain: ${domain}
