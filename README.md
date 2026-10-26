@@ -89,10 +89,10 @@ Make sure you have the following installed:
 **1. Clone the repository**
 
 ```bash
-git clone YOUR_REPOSITORY_URL
+git clone https://github.com/bingisiri07-spec/VISION.git
 ```
 
-Replace `YOUR_REPOSITORY_URL` with the actual URL of your GitHub repository.
+Replace `https://github.com/bingisiri07-spec/VISION.git` with the actual URL of your GitHub repository.
 
 **2. Navigate to the project directory**
 
