@@ -185,10 +185,10 @@ export default function AIAssistantDrawer({
           }}
         >
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.35rem' }}>
-            Optional: Connect Groq API Key
+            Optional: Custom Groq API Key
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            VISION functions fully with built-in startup intelligence. Enter a Groq key (<code>gsk_...</code>) for direct Llama-3.3-70B inference. Stored locally in your browser.
+            VISION Cloud AI is active with live server-side inference. You can optionally supply your own Groq key (<code>gsk_...</code>) to override the default cloud model.
           </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input

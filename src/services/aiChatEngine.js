@@ -2,20 +2,83 @@
  * aiChatEngine.js
  * Context-aware AI Co-Pilot that incorporates the user's active startup idea,
  * execution roadmap, tasks completed, decisions logged, and budget status.
+ *
+ * Primary path  : Calls the Supabase Edge Function `chat-copilot`, which
+ *                 securely invokes Groq on the server side using the stored
+ *                 secret (GROQ_API_KEY). The API key is NEVER present in
+ *                 frontend code or exposed to the client.
+ *
+ * Override path : If the user explicitly enters a personal Groq key (gsk_...),
+ *                 it can override the default cloud backend.
+ *
+ * Fallback path : If the Edge Function is unavailable (network error, rate
+ *                 limit, etc.), the built-in contextual rule engine is used
+ *                 so the user never experiences a broken or silent failure.
  */
 
+import { supabase } from './supabaseClient.js';
+
 export async function askAIAssistant({ userMessage, projectState, apiKey }) {
-  // If user provided a Groq API key, call Groq with full project context injected
+  // 1. OVERRIDE PATH: If user explicitly provided a custom personal Groq API key
   if (apiKey && apiKey.trim().startsWith('gsk_')) {
     try {
       const response = await callGroqChat({ userMessage, projectState, apiKey });
       if (response) return response;
     } catch (e) {
-      console.warn("Groq chat failed, falling back to contextual assistant engine:", e);
+      console.warn("[aiChatEngine] Direct Groq chat failed, attempting cloud Co-Pilot:", e);
     }
   }
 
-  // Built-in intelligent response generator:
+  // 2. PRIMARY PATH: Call the secure Supabase Edge Function `chat-copilot`
+  try {
+    const idea = projectState.selectedIdea;
+    const completedTasks = (projectState.tasks || []).filter((t) => t.completed).map((t) => t.title);
+    const pendingTasks = (projectState.tasks || []).filter((t) => !t.completed).map((t) => t.title);
+    const decisions = (projectState.decisions || []).map((d) => `${d.title}: chose ${d.chosenOption}`);
+
+    const projectContext = {
+      idea: idea ? {
+        name: idea.name,
+        category: idea.category,
+        problemAddressed: idea.problemAddressed,
+        uniqueValueProp: idea.uniqueValueProp,
+        targetAudience: idea.targetAudience,
+      } : null,
+      completedTasks,
+      pendingTasks,
+      budget: projectState.budget || {},
+      decisions,
+      progressPercent: projectState.tasks?.length
+        ? Math.round((completedTasks.length / projectState.tasks.length) * 100)
+        : 0,
+    };
+
+    const recentHistory = (projectState.chatHistory || [])
+      .slice(-10)
+      .filter((m) => m.id !== 'welcome')
+      .map((m) => ({
+        role: m.sender === 'assistant' ? 'assistant' : 'user',
+        content: m.text,
+      }));
+
+    const { data, error } = await supabase.functions.invoke('chat-copilot', {
+      body: {
+        userMessage,
+        projectContext,
+        conversationHistory: recentHistory,
+      },
+    });
+
+    if (error) {
+      console.warn("[aiChatEngine] chat-copilot Edge Function error, activating fallback:", error.message);
+    } else if (data?.message && typeof data.message === 'string') {
+      return data.message;
+    }
+  } catch (netErr) {
+    console.warn("[aiChatEngine] Could not reach chat-copilot Edge Function, activating fallback:", netErr);
+  }
+
+  // 3. FALLBACK PATH: Built-in intelligent response generator
   await new Promise((r) => setTimeout(r, 700));
 
   const text = userMessage.toLowerCase();
