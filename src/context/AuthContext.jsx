@@ -91,6 +91,63 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
+  // Update user profile (Full Name) in public.profiles and auth.users
+  const updateProfile = async ({ fullName }) => {
+    if (!user) throw new Error('You must be signed in to update your profile.');
+    
+    const trimmed = (fullName || '').trim();
+    if (!trimmed) {
+      throw new Error('Full name cannot be blank.');
+    }
+
+    // 1. Update public.profiles row
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: trimmed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to update profile row:', error.message);
+      throw error;
+    }
+
+    // 2. Sync to auth.users raw_user_meta_data
+    try {
+      await supabase.auth.updateUser({
+        data: { full_name: trimmed },
+      });
+    } catch (metaErr) {
+      console.warn('Could not sync user metadata in auth.users:', metaErr);
+    }
+
+    setProfile(data);
+    return data;
+  };
+
+  // Update password in Supabase Auth
+  const updatePassword = async (newPassword) => {
+    if (!user) throw new Error('You must be signed in to update your password.');
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      console.error('Failed to update password:', error.message);
+      throw error;
+    }
+
+    return data;
+  };
+
   const value = {
     user,
     session,
@@ -99,6 +156,8 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signOut,
+    updateProfile,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

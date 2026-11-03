@@ -1,0 +1,952 @@
+import React, { useState, useEffect } from 'react';
+import { generateCompetitorAnalysis, createFounderCompetitor } from '../../services/competitorEngine';
+import {
+  Crosshair,
+  Sparkles,
+  AlertTriangle,
+  ArrowRight,
+  Shield,
+  Layers,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Trash2,
+  RefreshCw,
+  Info,
+  DollarSign,
+  Users,
+  Target,
+  Zap,
+  HelpCircle,
+  UserCheck
+} from 'lucide-react';
+
+export default function CompetitorAnalyzer({
+  selectedIdea,
+  domain,
+  problemStatement,
+  constraints,
+  analysisData,
+  onSaveAnalysis,
+  onProceedToRoadmap
+}) {
+  const [analysis, setAnalysis] = useState(analysisData || null);
+  const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
+  const [error, setError] = useState('');
+
+  // Add custom competitor modal/drawer state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [compName, setCompName] = useState('');
+  const [compType, setCompType] = useState('direct'); // 'direct' | 'indirect' | 'statusQuo'
+  const [compDesc, setCompDesc] = useState('');
+  const [compAudience, setCompAudience] = useState('');
+  const [compPricing, setCompPricing] = useState('');
+  const [compStrengths, setCompStrengths] = useState('');
+  const [compWeaknesses, setCompWeaknesses] = useState('');
+
+  // Synchronize incoming prop
+  useEffect(() => {
+    if (analysisData) {
+      setAnalysis(analysisData);
+    }
+  }, [analysisData]);
+
+  // Initial auto-generation if an idea is selected and no analysis exists yet
+  useEffect(() => {
+    if (selectedIdea && !analysis && !loading) {
+      handleRunAnalysis();
+    }
+  }, [selectedIdea?.name]);
+
+  const handleRunAnalysis = async () => {
+    if (!selectedIdea) return;
+    setError('');
+    setLoading(true);
+
+    const steps = [
+      'Scanning market landscape and alternative solutions...',
+      'Mapping direct incumbents and enterprise players...',
+      'Identifying indirect substitutes and manual workarounds...',
+      'Synthesizing comparison matrix and strategic differentiation wedges...'
+    ];
+
+    let stepIdx = 0;
+    setLoadingStep(steps[0]);
+    const interval = setInterval(() => {
+      stepIdx++;
+      if (stepIdx < steps.length) {
+        setLoadingStep(steps[stepIdx]);
+      }
+    }, 700);
+
+    try {
+      const result = await generateCompetitorAnalysis({
+        idea: selectedIdea,
+        domain,
+        problemStatement,
+        constraints
+      });
+
+      clearInterval(interval);
+      setAnalysis(result);
+      if (onSaveAnalysis) {
+        onSaveAnalysis(result);
+      }
+    } catch (err) {
+      clearInterval(interval);
+      setError('An error occurred during competitive analysis. You can retry or enter competitors manually.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddFounderCompetitor = (e) => {
+    e.preventDefault();
+    if (!compName.trim()) return;
+
+    const newComp = createFounderCompetitor({
+      name: compName,
+      type: compType,
+      description: compDesc,
+      targetCustomer: compAudience,
+      pricing: compPricing,
+      strengths: compStrengths.split(',').map((s) => s.trim()).filter(Boolean),
+      weaknesses: compWeaknesses.split(',').map((w) => w.trim()).filter(Boolean),
+    });
+
+    const currentAnalysis = analysis || {
+      directCompetitors: [],
+      indirectCompetitors: [],
+      statusQuoAlternatives: [],
+      comparisonMatrix: [],
+      marketGaps: [],
+      differentiationWedges: [],
+      isAiHypothesis: true,
+    };
+
+    let updated;
+    if (compType === 'direct') {
+      updated = {
+        ...currentAnalysis,
+        directCompetitors: [newComp, ...(currentAnalysis.directCompetitors || [])],
+      };
+    } else if (compType === 'indirect') {
+      const indirectEntry = {
+        name: newComp.name,
+        category: newComp.targetCustomer || 'Adjacent Tool',
+        howItCompetes: newComp.description,
+        limitations: newComp.weaknesses?.join(', ') || 'Partial coverage of core problem',
+        source: 'User-Provided (Founder Input)',
+        isFounderAdded: true,
+        id: newComp.id,
+      };
+      updated = {
+        ...currentAnalysis,
+        indirectCompetitors: [indirectEntry, ...(currentAnalysis.indirectCompetitors || [])],
+      };
+    } else {
+      const statusQuoEntry = {
+        alternative: newComp.name,
+        whyUsersTolerateIt: newComp.description || 'Familiar habit with zero subscription cost',
+        hiddenCosts: newComp.weaknesses?.join(', ') || 'High manual effort and errors',
+        source: 'User-Provided (Founder Input)',
+        isFounderAdded: true,
+        id: newComp.id,
+      };
+      updated = {
+        ...currentAnalysis,
+        statusQuoAlternatives: [statusQuoEntry, ...(currentAnalysis.statusQuoAlternatives || [])],
+      };
+    }
+
+    setAnalysis(updated);
+    if (onSaveAnalysis) {
+      onSaveAnalysis(updated);
+    }
+
+    // Reset form
+    setCompName('');
+    setCompDesc('');
+    setCompAudience('');
+    setCompPricing('');
+    setCompStrengths('');
+    setCompWeaknesses('');
+    setShowAddModal(false);
+  };
+
+  const handleDeleteFounderCompetitor = (id) => {
+    if (!analysis) return;
+    const updated = {
+      ...analysis,
+      directCompetitors: (analysis.directCompetitors || []).filter((c) => c.id !== id),
+      indirectCompetitors: (analysis.indirectCompetitors || []).filter((c) => c.id !== id),
+      statusQuoAlternatives: (analysis.statusQuoAlternatives || []).filter((c) => c.id !== id),
+    };
+    setAnalysis(updated);
+    if (onSaveAnalysis) {
+      onSaveAnalysis(updated);
+    }
+  };
+
+  if (!selectedIdea) {
+    return (
+      <div className="glass-panel" style={{ padding: '3.5rem', textAlign: 'center', maxWidth: '720px', margin: '0 auto' }}>
+        <Crosshair size={48} color="#38bdf8" style={{ margin: '0 auto 1.5rem auto' }} />
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.75rem' }}>
+          No Startup Idea Selected
+        </h2>
+        <p style={{ color: 'var(--text-silver)', marginBottom: '1.75rem' }}>
+          Please go to Step 1 (Discovery & Ideas) to select a venture opportunity before analyzing the market landscape.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+      
+      {/* Step Header */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '2.5rem',
+          marginBottom: '2.5rem',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--cyan-glow)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700, marginBottom: '0.35rem' }}>
+              Feature 02 // Market & Competitor Landscape
+            </div>
+            <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
+              Competitive Landscape: {selectedIdea.name}
+            </h1>
+            <p style={{ color: 'var(--text-silver)', fontSize: '1.05rem', maxWidth: '780px' }}>
+              Identify direct incumbents, indirect substitutes, and status-quo workarounds.
+              Discover neglected market gaps and establish your venture's unfair differentiation wedge.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={handleRunAnalysis}
+              disabled={loading}
+              className="btn-secondary-pill"
+              title="Re-run AI competitive analysis"
+              style={{ opacity: loading ? 0.6 : 1 }}
+            >
+              <RefreshCw size={15} className={loading ? 'spin' : ''} />
+              <span>{loading ? 'Analyzing...' : 'Refresh AI Analysis'}</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-secondary-pill"
+              title="Add a real competitor or alternative you discovered"
+            >
+              <Plus size={15} />
+              <span>Add Competitor</span>
+            </button>
+
+            <button
+              onClick={onProceedToRoadmap}
+              className="btn-primary-glow"
+            >
+              <span>Execution Plan</span>
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Loading Overlay State */}
+      {loading && (
+        <div className="glass-panel" style={{ padding: '3.5rem', textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              border: '3px solid rgba(56, 189, 248, 0.2)',
+              borderTopColor: '#38bdf8',
+              margin: '0 auto 1.5rem auto',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
+            Analyzing Market Alternatives
+          </h3>
+          <p style={{ color: 'var(--cyan-glow)', fontSize: '0.95rem' }}>
+            {loadingStep}
+          </p>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {error && !loading && (
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '12px',
+            color: '#fca5a5',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            marginBottom: '2rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={handleRunAnalysis}
+            className="btn-secondary-pill"
+            style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* HONEST AI LABELING BANNER */}
+      {analysis && !loading && (
+        <div
+          style={{
+            padding: '1rem 1.35rem',
+            borderRadius: '12px',
+            marginBottom: '2.5rem',
+            background: analysis._isFallback ? 'rgba(245, 158, 11, 0.12)' : 'rgba(56, 189, 248, 0.1)',
+            border: analysis._isFallback ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(56, 189, 248, 0.25)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+          }}
+        >
+          {analysis._isFallback ? (
+            <AlertTriangle size={20} color="#fbbf24" style={{ flexShrink: 0, marginTop: '2px' }} />
+          ) : (
+            <Sparkles size={20} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+          )}
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: analysis._isFallback ? '#fbbf24' : '#ffffff', marginBottom: '0.2rem' }}>
+              {analysis._isFallback ? 'Illustrative Example Data (AI Service Unreachable)' : 'AI-Generated Strategic Hypotheses'}
+            </div>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-silver)', lineHeight: 1.5 }}>
+              {analysis._isFallback
+                ? 'These entries are illustrative domain templates to illustrate format and trade-offs. They are NOT live market findings. Click "Refresh AI Analysis" to connect to the live cloud analyzer or add your own verified competitors.'
+                : 'The direct competitors, pricing ranges, and weaknesses below were synthesized by AI as strategic hypotheses based on your problem context. Always conduct customer discovery interviews to independently verify competitor pricing and actual user complaints.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {analysis && !loading && (
+        <>
+          {/* SECTION 1: DIRECT COMPETITORS */}
+          <div style={{ marginBottom: '3rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Target size={20} color="#38bdf8" />
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+                  Direct Competitors & Incumbents
+                </h2>
+              </div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                {(analysis.directCompetitors || []).length} identified
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '1.5rem',
+              }}
+            >
+              {(analysis.directCompetitors || []).map((comp, idx) => (
+                <div
+                  key={comp.id || idx}
+                  className="glass-card"
+                  style={{
+                    padding: '1.75rem',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    {/* Header + Source Badge */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>
+                        {comp.name}
+                      </h3>
+
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '9999px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          background: comp.isFounderAdded
+                            ? 'rgba(59, 130, 246, 0.2)'
+                            : analysis._isFallback
+                            ? 'rgba(245, 158, 11, 0.15)'
+                            : 'rgba(56, 189, 248, 0.15)',
+                          color: comp.isFounderAdded
+                            ? '#93c5fd'
+                            : analysis._isFallback
+                            ? '#fbbf24'
+                            : '#38bdf8',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        {comp.isFounderAdded ? <UserCheck size={10} /> : <Sparkles size={10} />}
+                        <span>{comp.source || 'AI Hypothesis'}</span>
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-silver)', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                      {comp.description}
+                    </p>
+
+                    {/* Metadata: Target Customer & Pricing */}
+                    <div
+                      style={{
+                        padding: '0.75rem 1rem',
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        borderRadius: '8px',
+                        marginBottom: '1.25rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.4rem',
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-dim)' }}>Target Customer:</span>
+                        <span style={{ color: '#ffffff', fontWeight: 600 }}>{comp.targetCustomer || 'Undisclosed'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-dim)' }}>Pricing Model:</span>
+                        <span style={{ color: 'var(--cyan-glow)', fontWeight: 600 }}>{comp.pricing || 'Custom / Contact Sales'}</span>
+                      </div>
+                    </div>
+
+                    {/* Strengths & Weaknesses */}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)', fontWeight: 700, marginBottom: '0.35rem' }}>
+                        Key Advantages
+                      </div>
+                      <ul style={{ paddingLeft: '1.1rem', fontSize: '0.825rem', color: 'var(--text-silver)', lineHeight: 1.5, marginBottom: '0.85rem' }}>
+                        {(comp.strengths || []).map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#fca5a5', fontWeight: 700, marginBottom: '0.35rem' }}>
+                        Vulnerabilities & Limitations
+                      </div>
+                      <ul style={{ paddingLeft: '1.1rem', fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                        {(comp.weaknesses || []).map((w, i) => (
+                          <li key={i}>{w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {comp.isFounderAdded && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <button
+                        onClick={() => handleDeleteFounderCompetitor(comp.id)}
+                        style={{ color: '#ef4444', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={13} />
+                        <span>Remove Entry</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION 2: INDIRECT COMPETITORS & STATUS QUO ALTERNATIVES */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+              gap: '2rem',
+              marginBottom: '3rem',
+            }}
+          >
+            {/* Indirect Competitors */}
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <Layers size={18} color="#60a5fa" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  Indirect & Adjacent Substitutes
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                Tools or services in adjacent verticals that users piece together instead of a specialized solution.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {(analysis.indirectCompetitors || []).map((ind, i) => (
+                  <div
+                    key={ind.id || i}
+                    style={{
+                      padding: '1.1rem',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>
+                        {ind.name}
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                        {ind.category}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.825rem', color: 'var(--text-silver)', marginBottom: '0.5rem', lineHeight: 1.45 }}>
+                      <strong>Why used:</strong> {ind.howItCompetes}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#fca5a5', lineHeight: 1.4 }}>
+                      <strong>Why it fails:</strong> {ind.limitations}
+                    </div>
+                    {ind.isFounderAdded && (
+                      <button
+                        onClick={() => handleDeleteFounderCompetitor(ind.id)}
+                        style={{ color: '#ef4444', fontSize: '0.725rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Status-Quo / Manual Alternatives */}
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <Zap size={18} color="#67e8f9" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  Status-Quo Workarounds & Inertia
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                The true #1 competitor for most early-stage startups: habit, spreadsheets, and doing nothing.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {(analysis.statusQuoAlternatives || []).map((sq, i) => (
+                  <div
+                    key={sq.id || i}
+                    style={{
+                      padding: '1.1rem',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
+                      {sq.alternative}
+                    </div>
+                    <div style={{ fontSize: '0.825rem', color: 'var(--text-silver)', marginBottom: '0.5rem', lineHeight: 1.45 }}>
+                      <strong>Why users tolerate it:</strong> {sq.whyUsersTolerateIt}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#fbbf24', lineHeight: 1.4 }}>
+                      <strong>The hidden penalty:</strong> {sq.hiddenCosts}
+                    </div>
+                    {sq.isFounderAdded && (
+                      <button
+                        onClick={() => handleDeleteFounderCompetitor(sq.id)}
+                        style={{ color: '#ef4444', fontSize: '0.725rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: COMPARISON MATRIX */}
+          <div className="glass-panel" style={{ padding: '2.5rem', marginBottom: '3rem', overflowX: 'auto' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--cyan-glow)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                Side-by-Side Evaluation
+              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+                Competitive Differentiation Matrix
+              </h2>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '650px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                  <th style={{ padding: '1rem', color: 'var(--text-dim)', fontSize: '0.85rem', width: '22%' }}>
+                    Dimension / Workflow
+                  </th>
+                  <th style={{ padding: '1rem', color: '#ffffff', fontSize: '0.9rem', width: '30%', background: 'rgba(29, 114, 254, 0.15)', borderRadius: '8px 8px 0 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8' }} />
+                      <strong>{selectedIdea.name} (Your Venture)</strong>
+                    </div>
+                  </th>
+                  <th style={{ padding: '1rem', color: 'var(--text-silver)', fontSize: '0.85rem', width: '24%' }}>
+                    Direct Competitors
+                  </th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', width: '24%' }}>
+                    Status-Quo Workarounds
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(analysis.comparisonMatrix || []).map((row, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <td style={{ padding: '1.1rem 1rem', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff' }}>
+                      {row.dimension}
+                    </td>
+                    <td style={{ padding: '1.1rem 1rem', fontSize: '0.85rem', color: '#ffffff', background: 'rgba(29, 114, 254, 0.08)', fontWeight: 500, lineHeight: 1.45 }}>
+                      {row.founderVenture}
+                    </td>
+                    <td style={{ padding: '1.1rem 1rem', fontSize: '0.825rem', color: 'var(--text-silver)', lineHeight: 1.45 }}>
+                      {row.directCompetitor || row.directCompetitors}
+                    </td>
+                    <td style={{ padding: '1.1rem 1rem', fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      {row.statusQuo}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* SECTION 4: MARKET GAPS & DIFFERENTIATION WEDGES */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gap: '2rem',
+              marginBottom: '3rem',
+            }}
+          >
+            {/* Market Gaps */}
+            <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Target size={18} color="#38bdf8" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  Unmet Market Gaps
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                Friction points and underserved segments that current alternatives ignore or over-complicate.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {(analysis.marketGaps || []).map((gap, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      background: 'rgba(7, 18, 43, 0.65)',
+                      borderRadius: '8px',
+                      borderLeft: '3px solid #38bdf8',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-silver)',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {gap}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Differentiation Wedges */}
+            <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(29, 114, 254, 0.3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Shield size={18} color="#60a5fa" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  Strategic Differentiation Wedges
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                The unfair tactical advantages your MVP must lean into to dislodge incumbents.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {(analysis.differentiationWedges || []).map((wedge, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      background: 'rgba(7, 18, 43, 0.65)',
+                      borderRadius: '8px',
+                      borderLeft: '3px solid #2563eb',
+                      fontSize: '0.85rem',
+                      color: 'var(--text-silver)',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {wedge}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* MODAL: ADD FOUNDER COMPETITOR */}
+      {showAddModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 3000,
+            backgroundColor: 'rgba(2, 6, 18, 0.85)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+          }}
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              padding: '2.5rem',
+              position: 'relative',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              boxShadow: '0 0 50px rgba(29, 114, 254, 0.35)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowAddModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                color: 'var(--text-silver)',
+                padding: '0.4rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <XCircle size={20} />
+            </button>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--cyan-glow)', marginBottom: '0.25rem' }}>
+                Founder Discovery Entry
+              </div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>
+                Add Identified Alternative
+              </h2>
+              <p style={{ color: 'var(--text-silver)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                Record a real competitor or workaround you discovered through research or interviews.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddFounderCompetitor}>
+              {/* Type Selection */}
+              <div style={{ marginBottom: '1.15rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                  Alternative Type
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[
+                    { id: 'direct', label: 'Direct Competitor' },
+                    { id: 'indirect', label: 'Indirect Tool' },
+                    { id: 'statusQuo', label: 'Status Quo' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setCompType(t.id)}
+                      style={{
+                        flex: 1,
+                        padding: '0.5rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: compType === t.id ? 'rgba(29, 114, 254, 0.3)' : 'rgba(15, 23, 42, 0.6)',
+                        border: compType === t.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.08)',
+                        color: compType === t.id ? '#ffffff' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Name */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                  Name of Company / Workaround
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ColdHubs Africa or Excel Spreadsheets"
+                  value={compName}
+                  onChange={(e) => setCompName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* Description */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                  What do they offer / How does it work?
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Summary of their product or how users execute this workaround..."
+                  value={compDesc}
+                  onChange={(e) => setCompDesc(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              {/* Pricing & Audience (For Direct / Indirect) */}
+              {compType !== 'statusQuo' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.25rem' }}>
+                      Target Customer
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Large coops"
+                      value={compAudience}
+                      onChange={(e) => setCompAudience(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem 0.75rem',
+                        background: 'rgba(2, 6, 18, 0.6)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        borderRadius: '6px',
+                        color: '#ffffff',
+                        fontSize: '0.8rem',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.25rem' }}>
+                      Pricing Model
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. $0.50/day"
+                      value={compPricing}
+                      onChange={(e) => setCompPricing(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem 0.75rem',
+                        background: 'rgba(2, 6, 18, 0.6)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        borderRadius: '6px',
+                        color: '#ffffff',
+                        fontSize: '0.8rem',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Weaknesses / Vulnerability */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                  Key Limitation / Weakness (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Expensive fixed locations, slow turnaround"
+                  value={compWeaknesses}
+                  onChange={(e) => setCompWeaknesses(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="btn-secondary-pill"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-glow"
+                  style={{ padding: '0.65rem 1.35rem', fontSize: '0.85rem' }}
+                >
+                  Save Entry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

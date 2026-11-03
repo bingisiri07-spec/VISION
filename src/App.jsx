@@ -9,9 +9,11 @@ import Footer from './components/landing/Footer';
 import HowItWorksModal from './components/landing/HowItWorksModal';
 import AuthModal from './components/common/AuthModal';
 import ProjectsModal from './components/common/ProjectsModal';
+import ProfileModal from './components/common/ProfileModal';
 
 import WorkspaceShell from './components/workspace/WorkspaceShell';
 import ProblemDiscovery from './components/workspace/ProblemDiscovery';
+import CompetitorAnalyzer from './components/workspace/CompetitorAnalyzer';
 import ExecutionPlan from './components/workspace/ExecutionPlan';
 import BudgetAdvisor from './components/workspace/BudgetAdvisor';
 import DecisionSimulator from './components/workspace/DecisionSimulator';
@@ -37,6 +39,7 @@ import {
   getContinuousChatHistory,
   saveContinuousChatMessage,
   migrateLocalStateToSupabase,
+  saveCloudCompetitorAnalysis,
 } from './services/projectService';
 
 function AppContent() {
@@ -47,6 +50,7 @@ function AppContent() {
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const migrationAttempted = useRef(false);
 
   // Synchronize state to localStorage whenever modified
@@ -193,8 +197,23 @@ function AppContent() {
       budget: initialBudget,
     }));
 
-    setActiveView('execution-plan');
+    setActiveView('market-competitors');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Save competitor analysis to local state and Supabase (called from CompetitorAnalyzer)
+  const handleSaveCompetitorAnalysis = (competitorData) => {
+    setProjectState((prev) => {
+      if (user && prev.projectId) {
+        saveCloudCompetitorAnalysis(prev.projectId, competitorData).catch((err) =>
+          console.error('Failed to save competitor analysis to Supabase:', err)
+        );
+      }
+      return {
+        ...prev,
+        competitorAnalysis: competitorData,
+      };
+    });
   };
 
   // Handler to lock in and officially start the startup journey
@@ -385,6 +404,7 @@ function AppContent() {
         hasActiveProject={Boolean(projectState.selectedIdea)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
       {/* View Controller */}
@@ -426,6 +446,18 @@ function AppContent() {
               onIdeasGenerated={handleIdeasGenerated}
               onSelectIdea={handleSelectIdea}
               apiKey={projectState.apiKey}
+            />
+          )}
+
+          {activeView === 'market-competitors' && (
+            <CompetitorAnalyzer
+              selectedIdea={projectState.selectedIdea}
+              domain={projectState.problem?.domain}
+              problemStatement={projectState.problem?.problemStatement}
+              constraints={projectState.problem?.constraints}
+              analysisData={projectState.competitorAnalysis}
+              onSaveAnalysis={handleSaveCompetitorAnalysis}
+              onProceedToRoadmap={() => handleNavigateView('execution-plan')}
             />
           )}
 
@@ -491,6 +523,12 @@ function AppContent() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* Profile & Account Settings Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
 
       {/* Projects Modal (My Ventures Cloud Manager) */}

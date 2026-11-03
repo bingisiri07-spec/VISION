@@ -8,21 +8,40 @@ export default function Navbar({
   hasActiveProject,
   onOpenAuthModal,
   onOpenProjectsModal,
+  onOpenProfileModal,
 }) {
   const { user, profile, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
+
+      // Determine which section is currently most visible in the viewport
+      const sectionIds = ['hero', 'about', 'features', 'contact'];
+      let current = 'hero';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Section is "active" when its top edge has passed 40% of viewport height
+          if (rect.top <= window.innerHeight * 0.4) {
+            current = id;
+          }
+        }
+      }
+      setActiveSection(current);
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleNavClick = (sectionId) => {
     setMobileMenuOpen(false);
+    setActiveSection(sectionId);
     if (activeView !== 'landing') {
       setActiveView('landing');
       setTimeout(() => {
@@ -67,6 +86,7 @@ export default function Navbar({
           <button
             onClick={() => {
               setActiveView('landing');
+              setActiveSection('hero');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             style={{
@@ -112,7 +132,7 @@ export default function Navbar({
                 style={{
                   fontSize: '0.95rem',
                   fontWeight: 500,
-                  color: link.id === 'hero' && activeView === 'landing'
+                  color: activeSection === link.id && activeView === 'landing'
                     ? '#ffffff'
                     : 'var(--text-muted)',
                   transition: 'var(--transition-fast)',
@@ -121,13 +141,13 @@ export default function Navbar({
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={(e) => {
-                  if (link.id !== 'hero' || activeView !== 'landing') {
+                  if (activeSection !== link.id || activeView !== 'landing') {
                     e.currentTarget.style.color = 'var(--text-muted)';
                   }
                 }}
               >
                 {link.label}
-                {link.id === 'hero' && activeView === 'landing' && (
+                {activeSection === link.id && activeView === 'landing' && (
                   <span
                     style={{
                       position: 'absolute',
@@ -173,20 +193,35 @@ export default function Navbar({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.35rem 0.75rem',
+                    gap: '0.35rem',
+                    padding: '0.25rem 0.4rem 0.25rem 0.75rem',
                     borderRadius: '9999px',
                     background: 'rgba(15, 23, 42, 0.7)',
                     border: '1px solid rgba(56, 189, 248, 0.25)',
                     fontSize: '0.85rem',
                     color: '#ffffff',
                   }}
-                  title={user.email}
                 >
-                  <User size={13} color="#38bdf8" />
-                  <span style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {profile?.full_name || user.email.split('@')[0]}
-                  </span>
+                  <button
+                    onClick={onOpenProfileModal}
+                    title="Profile & Account Settings"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--cyan-bright)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '#ffffff')}
+                  >
+                    <User size={13} color="#38bdf8" />
+                    <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {profile?.full_name || user.email.split('@')[0]}
+                    </span>
+                  </button>
+
                   <button
                     onClick={signOut}
                     title="Sign Out"
@@ -195,8 +230,9 @@ export default function Navbar({
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '2px',
-                      marginLeft: '0.2rem',
+                      padding: '4px',
+                      marginLeft: '0.25rem',
+                      borderRadius: '4px',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
                     onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
@@ -276,6 +312,14 @@ export default function Navbar({
 
           {user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenProfileModal(); }}
+                className="btn-nav-outline"
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <User size={15} color="#38bdf8" />
+                <span>Account Settings ({profile?.full_name || user.email.split('@')[0]})</span>
+              </button>
               <button
                 onClick={() => { setMobileMenuOpen(false); onOpenProjectsModal(); }}
                 className="btn-nav-outline"

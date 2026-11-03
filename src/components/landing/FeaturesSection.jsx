@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb, Map, DollarSign, GitFork, CheckSquare, Bot, ArrowRight } from 'lucide-react';
+import { Lightbulb, Crosshair, Map, DollarSign, GitFork, CheckSquare, Bot, ArrowRight } from 'lucide-react';
 
 export default function FeaturesSection({ onSelectFeature }) {
   const features = [
@@ -12,9 +12,17 @@ export default function FeaturesSection({ onSelectFeature }) {
       actionText: "Try Problem Discovery"
     },
     {
+      id: 'market-competitors',
+      icon: <Crosshair size={24} color="#67e8f9" />,
+      tag: "Feature 02",
+      title: "Market & Competitor Analysis",
+      desc: "AI-assisted exploration of your competitive landscape: identify direct incumbents, indirect substitutes, and status-quo workarounds. Uncover neglected market gaps and sharpen your differentiation strategy before you build.",
+      actionText: "Analyze Competitors"
+    },
+    {
       id: 'execution-plan',
       icon: <Map size={24} color="#60a5fa" />,
-      tag: "Feature 02",
+      tag: "Feature 03",
       title: "Structured Execution Roadmap",
       desc: "Receive step-by-step phased milestones: from rapid problem validation and MVP scoping to required technical stacks, team roles, and initial go-to-market actions.",
       actionText: "View Sample Roadmap"
@@ -22,7 +30,7 @@ export default function FeaturesSection({ onSelectFeature }) {
     {
       id: 'budget-advisor',
       icon: <DollarSign size={24} color="#38bdf8" />,
-      tag: "Feature 03",
+      tag: "Feature 04",
       title: "Budget & Resource Advisor",
       desc: "Model your available capital and hours. See transparent breakdowns separating essential from optional costs, with zero-cost open-source tool recommendations.",
       actionText: "Plan Lean Budget"
@@ -30,7 +38,7 @@ export default function FeaturesSection({ onSelectFeature }) {
     {
       id: 'decision-simulator',
       icon: <GitFork size={24} color="#67e8f9" />,
-      tag: "Feature 04",
+      tag: "Feature 05",
       title: "Interactive Decision Simulator",
       desc: "Compare critical founder trade-offs: Solo vs. Co-founder, No-Code vs. Custom Code, Early Launch vs. Deep Validation, evaluating cost, risk, and speed.",
       actionText: "Simulate Decisions"
@@ -38,7 +46,7 @@ export default function FeaturesSection({ onSelectFeature }) {
     {
       id: 'journey-dashboard',
       icon: <CheckSquare size={24} color="#38bdf8" />,
-      tag: "Feature 05",
+      tag: "Feature 06",
       title: "Journey & Progress Tracking",
       desc: "A centralized command center tracking completed tasks, active milestones, recorded decisions, and actual verified progress metrics. No fabricated numbers.",
       actionText: "Open Dashboard"
@@ -46,7 +54,7 @@ export default function FeaturesSection({ onSelectFeature }) {
     {
       id: 'ai-assistant',
       icon: <Bot size={24} color="#60a5fa" />,
-      tag: "Feature 06",
+      tag: "Feature 07",
       title: "Context-Aware AI Co-Pilot",
       desc: "An intelligent advisor with persistent memory of your selected idea, execution roadmap, budget constraints, and logged milestones, ready to advise your next step.",
       actionText: "Consult AI Co-Pilot"
@@ -102,7 +110,7 @@ export default function FeaturesSection({ onSelectFeature }) {
               lineHeight: 1.7,
             }}
           >
-            Six integrated engines designed to replace guesswork with clarity, discipline, and actionable execution.
+            Seven integrated engines designed to replace guesswork with clarity, discipline, and actionable execution.
           </p>
         </div>
 

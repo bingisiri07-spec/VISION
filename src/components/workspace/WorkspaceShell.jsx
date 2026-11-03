@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Map, DollarSign, GitFork, LayoutDashboard, Lightbulb, Bot, Sparkles } from 'lucide-react';
+import { ArrowLeft, Target, Map, DollarSign, GitFork, LayoutDashboard, Lightbulb, Bot, Sparkles } from 'lucide-react';
 
 export default function WorkspaceShell({
   activeView,
@@ -10,10 +10,11 @@ export default function WorkspaceShell({
 }) {
   const steps = [
     { id: 'problem-discovery', label: '1. Discovery & Ideas', icon: <Lightbulb size={15} /> },
-    { id: 'execution-plan', label: '2. Execution Plan', icon: <Map size={15} />, disabled: !projectState.selectedIdea },
-    { id: 'budget-advisor', label: '3. Budget Advisor', icon: <DollarSign size={15} />, disabled: !projectState.selectedIdea },
-    { id: 'decision-simulator', label: '4. Decision Simulator', icon: <GitFork size={15} />, disabled: !projectState.selectedIdea },
-    { id: 'journey-dashboard', label: '5. Progress Dashboard', icon: <LayoutDashboard size={15} />, disabled: !projectState.selectedIdea },
+    { id: 'market-competitors', label: '2. Market & Competitors', icon: <Target size={15} />, disabled: !projectState.selectedIdea },
+    { id: 'execution-plan', label: '3. Execution Plan', icon: <Map size={15} />, disabled: !projectState.selectedIdea },
+    { id: 'budget-advisor', label: '4. Budget Advisor', icon: <DollarSign size={15} />, disabled: !projectState.selectedIdea },
+    { id: 'decision-simulator', label: '5. Decision Simulator', icon: <GitFork size={15} />, disabled: !projectState.selectedIdea },
+    { id: 'journey-dashboard', label: '6. Progress Dashboard', icon: <LayoutDashboard size={15} />, disabled: !projectState.selectedIdea },
   ];
 
   return (

@@ -27,6 +27,7 @@ export const initialProjectState = {
   decisions: [],
   tasks: [],
   notes: [],
+  competitorAnalysis: null,
   chatHistory: [
     {
       id: 'welcome',

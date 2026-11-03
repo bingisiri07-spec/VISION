@@ -127,11 +127,27 @@ export async function saveCloudRoadmap(projectId, ideaId, roadmapData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !projectId || !roadmapData) return;
 
+  // Retrieve existing overview to safely preserve competitorAnalysis if already stored
+  let mergedOverview = { ...(roadmapData.overview || {}) };
+  try {
+    const { data: existing } = await supabase
+      .from('roadmaps')
+      .select('overview')
+      .eq('project_id', projectId)
+      .maybeSingle();
+
+    if (existing?.overview?.competitorAnalysis && !mergedOverview.competitorAnalysis) {
+      mergedOverview.competitorAnalysis = existing.overview.competitorAnalysis;
+    }
+  } catch (err) {
+    console.warn('Could not check existing roadmap overview:', err);
+  }
+
   const payload = {
     project_id: projectId,
     user_id: user.id,
     idea_id: ideaId || null,
-    overview: roadmapData.overview || {},
+    overview: mergedOverview,
     funding_options: roadmapData.fundingOptions || [],
     phases_summary: roadmapData.phases || [],
   };
@@ -146,6 +162,47 @@ export async function saveCloudRoadmap(projectId, ideaId, roadmapData) {
     console.error('Error saving roadmap:', error.message);
   }
   return data;
+}
+
+// 5b. Save or update competitor analysis for a venture
+export async function saveCloudCompetitorAnalysis(projectId, competitorData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !projectId || !competitorData) return;
+
+  try {
+    const { data: existing } = await supabase
+      .from('roadmaps')
+      .select('*')
+      .eq('project_id', projectId)
+      .maybeSingle();
+
+    const mergedOverview = {
+      ...(existing?.overview || {}),
+      competitorAnalysis: competitorData,
+    };
+
+    const payload = {
+      project_id: projectId,
+      user_id: user.id,
+      idea_id: existing?.idea_id || null,
+      overview: mergedOverview,
+      funding_options: existing?.funding_options || [],
+      phases_summary: existing?.phases_summary || [],
+    };
+
+    const { data, error } = await supabase
+      .from('roadmaps')
+      .upsert(payload, { onConflict: 'project_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Could not save competitor analysis to Supabase:', error.message);
+    }
+    return data;
+  } catch (err) {
+    console.warn('Error saving competitor analysis:', err);
+  }
 }
 
 // 6. Save or update tasks
@@ -359,6 +416,7 @@ export async function getFullProject(projectId) {
       fundingOptions: roadmap.funding_options,
       phases: roadmap.phases_summary,
     } : null,
+    competitorAnalysis: roadmap?.overview?.competitorAnalysis || null,
     tasks: (tasks || []).map((t) => ({
       id: t.id,
       phaseId: t.phase_id,
@@ -503,9 +561,18 @@ export async function migrateLocalStateToSupabase(localState) {
 
   const chosenIdeaId = savedIdeas.find((i) => i.is_selected)?.id || null;
 
-  // 3. Save roadmap if present
+  // 3. Save roadmap if present (merging competitorAnalysis if present)
   if (localState.roadmap && localState.roadmap.overview) {
-    await saveCloudRoadmap(projectId, chosenIdeaId, localState.roadmap);
+    const roadmapData = {
+      ...localState.roadmap,
+      overview: {
+        ...localState.roadmap.overview,
+        competitorAnalysis: localState.competitorAnalysis || localState.roadmap.overview?.competitorAnalysis || null,
+      },
+    };
+    await saveCloudRoadmap(projectId, chosenIdeaId, roadmapData);
+  } else if (localState.competitorAnalysis) {
+    await saveCloudCompetitorAnalysis(projectId, localState.competitorAnalysis);
   }
 
   // 4. Save tasks if present
