@@ -11,7 +11,9 @@ import {
   Sparkles,
   ShieldCheck,
   Calendar,
-  KeyRound
+  KeyRound,
+  Phone,
+  Link
 } from 'lucide-react';
 
 export default function ProfileModal({ isOpen, onClose }) {
@@ -21,6 +23,8 @@ export default function ProfileModal({ isOpen, onClose }) {
   
   // Profile tab state
   const [fullName, setFullName] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
@@ -36,6 +40,8 @@ export default function ProfileModal({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       setFullName(profile?.full_name || user?.user_metadata?.full_name || '');
+      setContactNumber(profile?.contact_number || '');
+      setLinkedinUrl(profile?.linkedin_url || '');
       setProfileSuccess('');
       setProfileError('');
       setNewPassword('');
@@ -70,9 +76,23 @@ export default function ProfileModal({ isOpen, onClose }) {
       return;
     }
 
+    // Validate LinkedIn URL format if provided
+    const trimmedLinkedin = linkedinUrl.trim();
+    if (trimmedLinkedin && !trimmedLinkedin.match(/^https?:\/\/(www\.)?linkedin\.com\/.+/i)) {
+      setProfileError('LinkedIn URL must start with https://linkedin.com/ or https://www.linkedin.com/');
+      return;
+    }
+
+    // Basic phone validation if provided
+    const trimmedPhone = contactNumber.trim();
+    if (trimmedPhone && !trimmedPhone.match(/^[+\d\s\-().]{7,20}$/)) {
+      setProfileError('Please enter a valid contact number (7-20 digits, may include +, spaces, dashes).');
+      return;
+    }
+
     setProfileLoading(true);
     try {
-      await updateProfile({ fullName: trimmed });
+      await updateProfile({ fullName: trimmed, contactNumber: trimmedPhone || null, linkedinUrl: trimmedLinkedin || null });
       setProfileSuccess('Profile updated successfully.');
       setTimeout(() => setProfileSuccess(''), 3500);
     } catch (err) {
@@ -341,6 +361,61 @@ export default function ProfileModal({ isOpen, onClose }) {
                   }}
                 />
               </div>
+            </div>
+
+            {/* Contact Number */}
+            <div style={{ marginBottom: '1.15rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                Contact Number
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={16} color="var(--text-dim)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98765 43210"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem 0.75rem 2.6rem',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* LinkedIn URL */}
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                LinkedIn Profile URL
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Link size={16} color="var(--text-dim)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="url"
+                  placeholder="https://linkedin.com/in/your-profile"
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem 0.75rem 2.6rem',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-dim)', marginTop: '0.25rem', display: 'block' }}>
+                Format: https://linkedin.com/in/username
+              </span>
             </div>
 
             {/* Save Button */}

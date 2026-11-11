@@ -91,22 +91,28 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
-  // Update user profile (Full Name) in public.profiles and auth.users
-  const updateProfile = async ({ fullName }) => {
+  // Update user profile in public.profiles and auth.users metadata.
+  // Accepts: fullName (required), contactNumber (optional), linkedinUrl (optional).
+  const updateProfile = async ({ fullName, contactNumber, linkedinUrl }) => {
     if (!user) throw new Error('You must be signed in to update your profile.');
-    
+
     const trimmed = (fullName || '').trim();
     if (!trimmed) {
       throw new Error('Full name cannot be blank.');
     }
 
+    // Build the update payload with only defined fields
+    const updatePayload = {
+      full_name: trimmed,
+      updated_at: new Date().toISOString(),
+    };
+    if (contactNumber !== undefined) updatePayload.contact_number = (contactNumber || '').trim() || null;
+    if (linkedinUrl !== undefined) updatePayload.linkedin_url = (linkedinUrl || '').trim() || null;
+
     // 1. Update public.profiles row
     const { data, error } = await supabase
       .from('profiles')
-      .update({
-        full_name: trimmed,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', user.id)
       .select()
       .single();
@@ -116,7 +122,7 @@ export function AuthProvider({ children }) {
       throw error;
     }
 
-    // 2. Sync to auth.users raw_user_meta_data
+    // 2. Sync full_name to auth.users raw_user_meta_data
     try {
       await supabase.auth.updateUser({
         data: { full_name: trimmed },

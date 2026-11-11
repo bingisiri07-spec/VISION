@@ -12,6 +12,7 @@ import ProjectsModal from './components/common/ProjectsModal';
 import ProfileModal from './components/common/ProfileModal';
 
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import CollaborationsHub from './components/workspace/CollaborationsHub';
 import ProblemDiscovery from './components/workspace/ProblemDiscovery';
 import CompetitorAnalyzer from './components/workspace/CompetitorAnalyzer';
 import ExecutionPlan from './components/workspace/ExecutionPlan';
@@ -459,6 +460,10 @@ function AppContent() {
               onSaveAnalysis={handleSaveCompetitorAnalysis}
               onProceedToRoadmap={() => handleNavigateView('execution-plan')}
             />
+          )}
+
+          {activeView === 'collaborations' && (
+            <CollaborationsHub projectState={projectState} />
           )}
 
           {activeView === 'execution-plan' && (

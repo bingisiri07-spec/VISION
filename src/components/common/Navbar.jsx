@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Menu, X, Sparkles, LayoutDashboard, User, LogIn, LogOut, Layers } from 'lucide-react';
+import { ArrowRight, Menu, X, Sparkles, Users, User, LogIn, LogOut, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({
@@ -20,7 +20,7 @@ export default function Navbar({
       setIsScrolled(window.scrollY > 20);
 
       // Determine which section is currently most visible in the viewport
-      const sectionIds = ['hero', 'about', 'features', 'contact'];
+      const sectionIds = ['hero', 'about', 'features'];
       let current = 'hero';
       for (const id of sectionIds) {
         const el = document.getElementById(id);
@@ -124,7 +124,6 @@ export default function Navbar({
               { id: 'hero', label: 'Home' },
               { id: 'about', label: 'About' },
               { id: 'features', label: 'Features' },
-              { id: 'contact', label: 'Contact' },
             ].map((link) => (
               <button
                 key={link.id}
@@ -178,16 +177,15 @@ export default function Navbar({
                   <span>My Ventures</span>
                 </button>
 
-                {hasActiveProject && activeView !== 'journey-dashboard' && (
-                  <button
-                    onClick={() => setActiveView('journey-dashboard')}
-                    className="btn-nav-outline"
-                    title="Return to your saved project workspace"
-                  >
-                    <LayoutDashboard size={15} color="#38bdf8" />
-                    <span>Workspace</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => setActiveView('collaborations')}
+                  className="btn-nav-outline"
+                  title="Collaboration Network"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Users size={14} color="#38bdf8" />
+                  <span>Collaborations</span>
+                </button>
 
                 <div
                   style={{
@@ -218,7 +216,7 @@ export default function Navbar({
                   >
                     <User size={13} color="#38bdf8" />
                     <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {profile?.full_name || user.email.split('@')[0]}
+                      Profile
                     </span>
                   </button>
 
@@ -295,7 +293,7 @@ export default function Navbar({
             gap: '1.25rem',
           }}
         >
-          {['Home', 'About', 'Features', 'Contact'].map((item) => (
+          {['Home', 'About', 'Features'].map((item) => (
             <button
               key={item}
               onClick={() => handleNavClick(item.toLowerCase() === 'home' ? 'hero' : item.toLowerCase())}
@@ -318,7 +316,7 @@ export default function Navbar({
                 style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
               >
                 <User size={15} color="#38bdf8" />
-                <span>Account Settings ({profile?.full_name || user.email.split('@')[0]})</span>
+                <span>Account Settings (Profile)</span>
               </button>
               <button
                 onClick={() => { setMobileMenuOpen(false); onOpenProjectsModal(); }}
