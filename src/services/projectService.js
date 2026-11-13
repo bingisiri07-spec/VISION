@@ -24,6 +24,44 @@ export async function getUserProjects() {
   return data || [];
 }
 
+// 1b. Fetch comprehensive cross-venture summary for analytics & overview
+export async function getAllUserVenturesSummary() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  try {
+    const [
+      { data: projects, error: pErr },
+      { data: ideas, error: iErr },
+      { data: tasks, error: tErr },
+      { data: decisions, error: dErr },
+      { data: notes, error: nErr },
+      { data: roadmaps, error: rErr }
+    ] = await Promise.all([
+      supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('ideas').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('tasks').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('decisions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('notes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('roadmaps').select('*').eq('user_id', user.id),
+    ]);
+
+    if (pErr) console.warn('Could not fetch projects for summary:', pErr.message);
+
+    return {
+      projects: projects || [],
+      ideas: ideas || [],
+      tasks: tasks || [],
+      decisions: decisions || [],
+      notes: notes || [],
+      roadmaps: roadmaps || [],
+    };
+  } catch (err) {
+    console.error('Error fetching user ventures summary:', err);
+    return null;
+  }
+}
+
 // 2. Create a new project row in Supabase
 export async function createCloudProject({
   title,

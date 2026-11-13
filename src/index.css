@@ -214,6 +214,41 @@ button {
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
 }
 
+.btn-nav-outline.active {
+  background: rgba(29, 114, 254, 0.25);
+  border-color: var(--cyan-bright);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+/* Spinner helper */
+.spin {
+  animation: spinAround 1s linear infinite;
+}
+
+@keyframes spinAround {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Recharts Theme Enhancements */
+.recharts-default-tooltip {
+  background-color: rgba(2, 6, 18, 0.95) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+.recharts-legend-item-text {
+  color: #94a3b8 !important;
+  font-size: 0.78rem !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+
 /* Subtle glowing pulse animations */
 @keyframes nebulaDrift {
   0% { transform: scale(1) translate(0, 0); opacity: 0.7; }

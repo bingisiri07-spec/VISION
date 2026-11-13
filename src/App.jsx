@@ -12,6 +12,9 @@ import ProjectsModal from './components/common/ProjectsModal';
 import ProfileModal from './components/common/ProfileModal';
 
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import OverviewDashboard from './components/workspace/OverviewDashboard';
+import AnalyticsDashboard from './components/workspace/AnalyticsDashboard';
+import ValidationDashboard from './components/workspace/ValidationDashboard';
 import CollaborationsHub from './components/workspace/CollaborationsHub';
 import ProblemDiscovery from './components/workspace/ProblemDiscovery';
 import CompetitorAnalyzer from './components/workspace/CompetitorAnalyzer';
@@ -348,9 +351,9 @@ function AppContent() {
         }));
 
         if (loaded.journeyStarted) {
-          setActiveView('journey-dashboard');
+          setActiveView('overview');
         } else if (loaded.selectedIdea) {
-          setActiveView('execution-plan');
+          setActiveView('overview');
         } else {
           setActiveView('problem-discovery');
         }
@@ -379,13 +382,31 @@ function AppContent() {
       setIsAIOpen(true);
       return;
     }
-    if (view === 'execution-roadmap') {
+    if (view === 'profile') {
+      setIsProfileModalOpen(true);
+      return;
+    }
+    if (view === 'projects' || view === 'my-ventures') {
+      setIsProjectsModalOpen(true);
+      return;
+    }
+    if (view === 'discover') {
+      setActiveView('problem-discovery');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (view === 'market-research') {
+      setActiveView('market-competitors');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (view === 'execution-roadmap' || view === 'roadmap') {
       setActiveView('execution-plan');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (view === 'project-dashboard') {
-      setActiveView('journey-dashboard');
+    if (view === 'project-dashboard' || view === 'dashboard') {
+      setActiveView('overview');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -440,7 +461,18 @@ function AppContent() {
           setActiveView={handleNavigateView}
           projectState={projectState}
           onOpenAssistant={() => setIsAIOpen(true)}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         >
+          {activeView === 'overview' && (
+            <OverviewDashboard
+              projectState={projectState}
+              onNavigate={handleNavigateView}
+              onOpenAssistant={() => setIsAIOpen(true)}
+              onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
+              onSelectIdea={handleSelectIdea}
+            />
+          )}
+
           {activeView === 'problem-discovery' && (
             <ProblemDiscovery
               projectState={projectState}
@@ -462,6 +494,23 @@ function AppContent() {
             />
           )}
 
+          {activeView === 'validation' && (
+            <ValidationDashboard
+              projectState={projectState}
+              onNavigate={handleNavigateView}
+              onAddTask={handleAddTask}
+              onToggleTask={handleToggleTask}
+            />
+          )}
+
+          {activeView === 'analytics' && (
+            <AnalyticsDashboard
+              projectState={projectState}
+              onNavigate={handleNavigateView}
+              onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
+            />
+          )}
+
           {activeView === 'collaborations' && (
             <CollaborationsHub projectState={projectState} />
           )}
@@ -470,6 +519,9 @@ function AppContent() {
             <ExecutionPlan
               roadmapData={projectState.roadmap}
               selectedIdea={projectState.selectedIdea}
+              tasks={projectState.tasks}
+              onToggleTask={handleToggleTask}
+              onAddTask={handleAddTask}
               journeyStarted={projectState.journeyStarted}
               onProceedToBudget={() => {
                 handleNavigateView('budget-advisor');

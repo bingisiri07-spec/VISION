@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateCompetitorAnalysis, createFounderCompetitor } from '../../services/competitorEngine';
+import MarketResearchVisualizer from './MarketResearchVisualizer';
 import {
   Crosshair,
   Sparkles,
@@ -742,6 +743,14 @@ export default function CompetitorAnalyzer({
               </div>
             </div>
           </div>
+
+          {/* SECTION 5: TAM/SAM/SOM, CUSTOMER PERSONAS & MARKET DYNAMICS */}
+          <MarketResearchVisualizer
+            selectedIdea={selectedIdea}
+            domain={domain}
+            problemStatement={problemStatement}
+            constraints={constraints}
+          />
         </>
       )}
 

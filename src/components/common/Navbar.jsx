@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Menu, X, Sparkles, Users, User, LogIn, LogOut, Layers } from 'lucide-react';
+import { ArrowRight, Menu, X, Sparkles, Users, User, LogIn, LogOut, Layers, LayoutDashboard, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({
@@ -164,9 +164,29 @@ export default function Navbar({
           </nav>
 
           {/* Action Area */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             {user ? (
               <>
+                <button
+                  onClick={() => setActiveView('overview')}
+                  className="btn-nav-outline"
+                  title="Startup Overview Dashboard"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <LayoutDashboard size={14} color="#38bdf8" />
+                  <span>Overview</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveView('analytics')}
+                  className="btn-nav-outline"
+                  title="Venture Analytics Telemetry"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <BarChart3 size={14} color="#38bdf8" />
+                  <span>Analytics</span>
+                </button>
+
                 <button
                   onClick={onOpenProjectsModal}
                   className="btn-nav-outline"
@@ -174,7 +194,7 @@ export default function Navbar({
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                 >
                   <Layers size={14} color="#38bdf8" />
-                  <span>My Ventures</span>
+                  <span>Ventures</span>
                 </button>
 
                 <button
@@ -184,7 +204,7 @@ export default function Navbar({
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                 >
                   <Users size={14} color="#38bdf8" />
-                  <span>Collaborations</span>
+                  <span>Network</span>
                 </button>
 
                 <div
@@ -251,11 +271,11 @@ export default function Navbar({
             )}
 
             <button
-              onClick={() => setActiveView('problem-discovery')}
+              onClick={() => setActiveView(activeView === 'landing' && hasActiveProject ? 'overview' : 'problem-discovery')}
               className="btn-primary-glow"
               style={{ padding: '0.5rem 1.15rem', fontSize: '0.85rem' }}
             >
-              <span>{activeView === 'landing' ? 'Get Started' : 'New Problem'}</span>
+              <span>{activeView === 'landing' ? (hasActiveProject ? 'Open Workspace' : 'Get Started') : 'New Problem'}</span>
               <ArrowRight size={14} />
             </button>
 
@@ -310,6 +330,22 @@ export default function Navbar({
 
           {user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <button
+                onClick={() => { setMobileMenuOpen(false); setActiveView('overview'); }}
+                className="btn-nav-outline"
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <LayoutDashboard size={15} color="#38bdf8" />
+                <span>Overview Dashboard</span>
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); setActiveView('analytics'); }}
+                className="btn-nav-outline"
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <BarChart3 size={15} color="#38bdf8" />
+                <span>Venture Analytics</span>
+              </button>
               <button
                 onClick={() => { setMobileMenuOpen(false); onOpenProfileModal(); }}
                 className="btn-nav-outline"
