@@ -79,8 +79,51 @@ flowchart TD
     C -->|No| E
     E --> F
     F --> G --> H
+```
 
-Architecture Overview
+---
+
+## 🏗️ System Architecture
+
+VISION uses a React-based frontend connected to Supabase for backend services and AI-powered operations.
+
+```mermaid
+flowchart TB
+    U([User])
+    subgraph Frontend["Frontend Layer"]
+        R[React + Vite]
+        UI[UI Components]
+        AUTH[Authentication Context]
+        WORK[ venture Workspace]
+    end
+
+    subgraph Backend["Backend Layer"]
+        SB[Supabase]
+        DB[(PostgreSQL Database)]
+        SA[Supabase Authentication]
+        EF[Supabase Edge Functions]
+    end
+
+    subgraph AI["AI Integration"]
+        GROQ[Groq API]
+        RESP[AI Generated Responses]
+    end
+
+    U --> R
+    R --> UI
+    R --> AUTH
+    R --> WORK
+    AUTH <--> SA
+    WORK <--> SB
+    SB <--> DB
+    WORK --> EF
+    EF --> GROQ
+    GROQ --> RESP
+    RESP --> EF
+    EF --> WORK
+```
+
+### Architecture Overview
 
 **Frontend**
 - React.js for component-based UI development.
@@ -98,7 +141,7 @@ Architecture Overview
 **AI Integration**
 - Groq API for AI-powered generation and analysis.
 - Supabase Edge Functions for handling AI requests.
-- AI-assisted problem analysis, ideation, and business planning. 
+- AI-assisted problem analysis, ideation, and business planning.
 
 ---
 
