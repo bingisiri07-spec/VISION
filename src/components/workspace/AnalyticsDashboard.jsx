@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllUserVenturesSummary } from '../../services/projectService';
+import { formatINR } from '../../services/budgetEngine';
 
 // Consistent Color Palette for Charts
 const CHART_COLORS = ['#1d72fe', '#38bdf8', '#34d399', '#f59e0b', '#a78bfa', '#ec4899', '#06b6d4'];
@@ -649,7 +650,7 @@ export default function AnalyticsDashboard({
                     </span>
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff' }}>
-                    {projectState.selectedIdea.name}
+                    {projectState.startupName || projectState.title || projectState.selectedIdea.name}
                   </h3>
                   <p style={{ color: 'var(--text-silver)', fontSize: '0.875rem' }}>
                     "{projectState.selectedIdea.tagline || projectState.selectedIdea.uniqueValueProp}"
@@ -714,7 +715,7 @@ export default function AnalyticsDashboard({
                     {projectState.budget?.runwayMonths || 3} Months
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                    Budget: ${projectState.budget?.availableBudget || 1500}
+                    Budget: {formatINR(projectState.budget?.availableBudget && projectState.budget.availableBudget > 2000 ? projectState.budget.availableBudget : 150000)}
                   </div>
                 </div>
               </div>

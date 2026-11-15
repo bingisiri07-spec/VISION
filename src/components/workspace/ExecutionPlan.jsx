@@ -131,7 +131,7 @@ export default function ExecutionPlan({
               Feature 03 // 2-Week Phased Execution Plan
             </div>
             <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
-              Execution Roadmap: {selectedIdea.name}
+              Execution Roadmap: {selectedIdea.startupName || selectedIdea.name}
             </h1>
             <p style={{ color: 'var(--text-silver)', fontSize: '1.05rem', maxWidth: '780px' }}>
               Sequential two-week milestones to move from problem-solution validation to an MVP prototype without wasted capital.

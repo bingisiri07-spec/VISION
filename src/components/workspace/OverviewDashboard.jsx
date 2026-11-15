@@ -19,21 +19,36 @@ import {
   ChevronRight,
   Zap,
   BarChart3,
-  Bot
+  Bot,
+  Edit3,
+  Building2,
+  HelpCircle,
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllUserVenturesSummary, getUserProjects } from '../../services/projectService';
+import StartupNamingModal from './StartupNamingModal';
+import EditProblemModal from './EditProblemModal';
+import { formatINR } from '../../services/budgetEngine';
 
 export default function OverviewDashboard({
   projectState,
   onNavigate,
   onOpenAssistant,
   onOpenProjectsModal,
-  onSelectIdea
+  onSelectIdea,
+  onUpdateStartupName,
+  onUpdateProblemOnly,
+  onExploreNewDirection,
+  userProjects = [],
+  onSelectProject,
+  onStartNewProject
 }) {
   const { user, profile } = useAuth();
   const [crossVentureData, setCrossVentureData] = useState(null);
   const [isLoadingCrossData, setIsLoadingCrossData] = useState(false);
+  const [isNamingModalOpen, setIsNamingModalOpen] = useState(false);
+  const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 
   // Load cloud cross-venture data if authenticated
   useEffect(() => {
@@ -246,7 +261,8 @@ export default function OverviewDashboard({
   }, [projectState.tasks]);
 
   const activeIdea = projectState.selectedIdea;
-  const founderName = profile?.fullName || user?.email?.split('@')[0] || 'Founder';
+  const founderName = profile?.full_name?.trim() || user?.user_metadata?.full_name?.trim() || 'Founder';
+  const startupName = projectState.startupName || projectState.title || activeIdea?.name || 'My Startup Venture';
 
   // Empty state when no venture or problem exists
   const hasNoVentures = metrics.totalVentures === 0 && !activeIdea && !projectState.problem?.problemStatement;
@@ -287,7 +303,7 @@ export default function OverviewDashboard({
                 <Sparkles size={12} />
                 Startup Intelligence Platform
               </span>
-              {activeIdea && (
+              {startupName && (
                 <span
                   style={{
                     padding: '0.2rem 0.65rem',
@@ -298,7 +314,7 @@ export default function OverviewDashboard({
                     fontWeight: 600,
                   }}
                 >
-                  Active: {activeIdea.name}
+                  Startup: {startupName}
                 </span>
               )}
             </div>
@@ -319,7 +335,7 @@ export default function OverviewDashboard({
                 className="btn-primary-glow"
                 style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem' }}
               >
-                <span>Continue "{activeIdea.name}"</span>
+                <span>Continue "{startupName}"</span>
                 <ArrowRight size={14} />
               </button>
             ) : (
@@ -381,15 +397,19 @@ export default function OverviewDashboard({
                   color: 'var(--cyan-glow)',
                 }}
               >
-                <Target size={22} />
+                <Building2 size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Focused Opportunity</div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
-                  {activeIdea.name}
-                  <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '0.5rem' }}>
-                    • {activeIdea.category || 'General'}
-                  </span>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Active Venture Workspace</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>{startupName}</span>
+                  <button
+                    onClick={() => setIsNamingModalOpen(true)}
+                    style={{ background: 'none', border: 'none', color: 'var(--cyan-glow)', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                    title="Rename Startup"
+                  >
+                    <Edit3 size={14} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -424,6 +444,141 @@ export default function OverviewDashboard({
           </div>
         )}
       </div>
+
+      {/* 1b. Venture Identity & Problem Workspace Card (Requirement 5 & 6) */}
+      {(activeIdea || projectState.problem?.problemStatement) && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '2rem 2.25rem',
+            marginBottom: '2rem',
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(2, 6, 18, 0.85) 100%)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div style={{ flex: 1, minWidth: '280px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    color: 'var(--cyan-glow)',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    padding: '0.15rem 0.55rem',
+                    borderRadius: '4px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                  }}
+                >
+                  Startup Identity & Strategy
+                </span>
+                <button
+                  onClick={() => setIsNamingModalOpen(true)}
+                  className="btn-secondary-pill"
+                  style={{ padding: '0.2rem 0.6rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  title="Rename this venture"
+                >
+                  <Edit3 size={11} />
+                  <span>Rename Startup</span>
+                </button>
+              </div>
+
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                {startupName}
+              </h2>
+              {activeIdea && (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-silver)', marginTop: '0.25rem' }}>
+                  Concept: <strong style={{ color: '#ffffff' }}>{activeIdea.name}</strong> • {activeIdea.category || 'Technology'}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Action Navigation Buttons */}
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                onClick={() => setIsProblemModalOpen(true)}
+                className="btn-secondary-pill"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.825rem' }}
+              >
+                <Edit3 size={13} />
+                <span>Edit Problem Statement</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('market-competitors')}
+                className="btn-secondary-pill"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.825rem' }}
+              >
+                <Target size={13} color="#38bdf8" />
+                <span>Market Insights</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('execution-plan')}
+                className="btn-primary-glow"
+                style={{ padding: '0.5rem 1.15rem', fontSize: '0.825rem' }}
+              >
+                <span>Roadmap Sprints</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Original Problem Statement Display */}
+          <div
+            style={{
+              padding: '1.25rem 1.4rem',
+              borderRadius: '12px',
+              background: 'rgba(2, 6, 18, 0.6)',
+              border: '1px solid rgba(56, 189, 248, 0.15)',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--cyan-glow)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Original Problem Statement ({projectState.problem?.domain || 'General'})
+              </span>
+              {projectState.problem?.affectedAudience && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Target Audience: <strong style={{ color: 'var(--text-silver)' }}>{projectState.problem.affectedAudience}</strong>
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '0.9rem', color: '#ffffff', lineHeight: 1.6, margin: 0 }}>
+              {projectState.problem?.problemStatement || 'No specific problem description recorded for this venture yet.'}
+            </p>
+            {projectState.problem?.constraints && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '0.5rem' }}>
+                <strong>Key Constraints:</strong> {projectState.problem.constraints}
+              </div>
+            )}
+          </div>
+
+          {/* Active Solution, UVP & Business Models */}
+          {activeIdea && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ padding: '1rem', borderRadius: '10px', background: 'rgba(15, 23, 42, 0.45)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--cyan-bright)', fontWeight: 700, marginBottom: '0.25rem' }}>
+                  Unique Value Proposition (UVP)
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-silver)', lineHeight: 1.5 }}>
+                  {activeIdea.uniqueValueProp || activeIdea.solution || 'Differentiated core capability resolving target bottleneck.'}
+                </div>
+              </div>
+
+              <div style={{ padding: '1rem', borderRadius: '10px', background: 'rgba(15, 23, 42, 0.45)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#fbbf24', fontWeight: 700, marginBottom: '0.25rem' }}>
+                  Feasibility & Revenue Models
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-silver)', lineHeight: 1.5 }}>
+                  Feasibility Score: <strong style={{ color: '#ffffff' }}>{activeIdea.feasibilityScore || 75}/100</strong> • {(activeIdea.revenueModels && activeIdea.revenueModels[0]) || 'SaaS / Direct Value Exchange'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Key Metrics Grid (All actual measured data) */}
       <div
@@ -860,6 +1015,46 @@ export default function OverviewDashboard({
           })}
         </div>
       </div>
+
+      {/* Startup Naming / Renaming Modal */}
+      {isNamingModalOpen && (
+        <StartupNamingModal
+          isOpen={isNamingModalOpen}
+          selectedIdea={activeIdea}
+          problemStatement={projectState.problem?.problemStatement}
+          currentName={startupName}
+          apiKey={projectState.apiKey}
+          isEditingExisting={true}
+          onConfirmName={(newName) => {
+            if (onUpdateStartupName) {
+              onUpdateStartupName(newName);
+            }
+            setIsNamingModalOpen(false);
+          }}
+          onClose={() => setIsNamingModalOpen(false)}
+        />
+      )}
+
+      {/* Edit Problem Statement / Explore Direction Modal */}
+      {isProblemModalOpen && (
+        <EditProblemModal
+          isOpen={isProblemModalOpen}
+          problem={projectState.problem || {}}
+          onSaveOnly={(updatedProblem) => {
+            if (onUpdateProblemOnly) {
+              onUpdateProblemOnly(updatedProblem);
+            }
+            setIsProblemModalOpen(false);
+          }}
+          onRegenerate={(updatedProblem) => {
+            if (onExploreNewDirection) {
+              onExploreNewDirection(updatedProblem);
+            }
+            setIsProblemModalOpen(false);
+          }}
+          onClose={() => setIsProblemModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

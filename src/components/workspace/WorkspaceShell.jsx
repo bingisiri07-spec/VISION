@@ -104,11 +104,11 @@ export default function WorkspaceShell({
     setMobileDrawerOpen(false);
   };
 
-  const activeVentureName = projectState.selectedIdea
+  const activeVentureName = projectState.startupName || projectState.title || (projectState.selectedIdea
     ? projectState.selectedIdea.name
     : projectState.problem?.problemStatement
     ? 'Draft Discovery'
-    : 'New Venture';
+    : 'New Venture');
 
   return (
     <div

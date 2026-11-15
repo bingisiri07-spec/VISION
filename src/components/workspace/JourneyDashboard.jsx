@@ -4,7 +4,7 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   BookmarkCheck,
   Plus,
@@ -16,6 +16,7 @@ import {
   Bot,
   AlertCircle
 } from 'lucide-react';
+import { formatINR } from '../../services/budgetEngine';
 
 export default function JourneyDashboard({
   projectState,
@@ -166,8 +167,10 @@ export default function JourneyDashboard({
             <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: '0.25rem' }}>
               Capital Runway
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <span style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff' }}>${budget.availableBudget || 1500}</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff' }}>
+                {formatINR(budget.availableBudget && budget.availableBudget > 2000 ? budget.availableBudget : 150000)}
+              </span>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>({budget.runwayMonths || 3} mo)</span>
             </div>
             <button

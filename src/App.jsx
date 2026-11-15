@@ -44,6 +44,9 @@ import {
   saveContinuousChatMessage,
   migrateLocalStateToSupabase,
   saveCloudCompetitorAnalysis,
+  updateStartupName,
+  updateCloudProjectProblem,
+  updateVentureStage,
 } from './services/projectService';
 
 function AppContent() {
@@ -55,12 +58,27 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [cloudProjects, setCloudProjects] = useState([]);
   const migrationAttempted = useRef(false);
 
   // Synchronize state to localStorage whenever modified
   useEffect(() => {
     saveState(projectState);
   }, [projectState]);
+
+  // Refresh user projects from Supabase
+  const refreshProjects = async () => {
+    if (!user) {
+      setCloudProjects([]);
+      return;
+    }
+    try {
+      const list = await getUserProjects();
+      setCloudProjects(list || []);
+    } catch (err) {
+      console.warn('Could not refresh projects list:', err);
+    }
+  };
 
   // Load continuous chat history on mount & user change (Do NOT restart chat across sessions)
   useEffect(() => {
@@ -74,6 +92,7 @@ function AppContent() {
       }
     }
     loadChat();
+    refreshProjects();
   }, [user]);
 
   // Handle automatic migration of draft localStorage project upon user sign-in
@@ -83,16 +102,19 @@ function AppContent() {
 
     async function handleInitialCloudSync() {
       try {
-        const cloudProjects = await getUserProjects();
+        const fetchedProjects = await getUserProjects();
+        setCloudProjects(fetchedProjects || []);
 
         // If user already has cloud projects and local state has no unsaved project, load their latest
-        if (cloudProjects.length > 0 && !projectState.projectId) {
-          const latest = await getFullProject(cloudProjects[0].id);
+        if (fetchedProjects.length > 0 && !projectState.projectId) {
+          const latest = await getFullProject(fetchedProjects[0].id);
           if (latest) {
             setProjectState((prev) => ({
               ...prev,
               ...latest,
               projectId: latest.id,
+              startupName: latest.startupName || latest.title,
+              title: latest.startupName || latest.title,
               // Keep continuous chat history intact
               chatHistory: prev.chatHistory,
               apiKey: prev.apiKey,
@@ -109,6 +131,7 @@ function AppContent() {
               ...prev,
               projectId: newProjectId,
             }));
+            refreshProjects();
           }
         }
       } catch (err) {
@@ -158,8 +181,9 @@ function AppContent() {
     }));
   };
 
-  // Handler when user selects a startup idea to build
-  const handleSelectIdea = async (idea) => {
+  // Handler when user selects a startup idea and confirms its startup name
+  const handleSelectIdea = async (idea, confirmedStartupName) => {
+    const finalStartupName = (confirmedStartupName || idea.name || 'My Startup').trim();
     const roadmap = generateExecutionPlan(idea, projectState.problem?.constraints);
 
     // Flatten all tasks from all phases into active checklist
@@ -175,19 +199,36 @@ function AppContent() {
     });
 
     const initialBudget = calculateBudgetBreakdown({
-      availableBudget: projectState.budget?.availableBudget || 1500,
+      availableBudget: projectState.budget?.availableBudget || 150000,
       runwayMonths: projectState.budget?.runwayMonths || 3,
       teamSize: projectState.budget?.teamSize || 1,
       timeAvailableHoursPerWeek: projectState.budget?.timeAvailableHoursPerWeek || 20,
     });
 
+    let currentProjectId = projectState.projectId;
+
     // If connected to a Supabase project, sync the selections
-    if (user && projectState.projectId) {
+    if (user) {
       try {
-        await selectCloudIdea(projectState.projectId, idea.id, idea.name);
-        await saveCloudRoadmap(projectState.projectId, idea.id, roadmap);
-        await syncCloudTasks(projectState.projectId, initialTasks);
-        await saveCloudBudget(projectState.projectId, initialBudget);
+        if (!currentProjectId) {
+          const created = await createCloudProject({
+            startupName: finalStartupName,
+            title: finalStartupName,
+            domain: projectState.problem?.domain || 'technology',
+            problemStatement: projectState.problem?.problemStatement,
+            affectedAudience: projectState.problem?.affectedAudience,
+            constraints: projectState.problem?.constraints,
+            goals: projectState.problem?.goals,
+          });
+          currentProjectId = created.id;
+        }
+
+        await selectCloudIdea(currentProjectId, idea.id, finalStartupName);
+        await saveCloudRoadmap(currentProjectId, idea.id, roadmap);
+        await syncCloudTasks(currentProjectId, initialTasks);
+        await saveCloudBudget(currentProjectId, initialBudget);
+        await updateVentureStage(currentProjectId, 'Overview');
+        refreshProjects();
       } catch (err) {
         console.error('Failed to sync idea selection to Supabase:', err);
       }
@@ -195,13 +236,70 @@ function AppContent() {
 
     setProjectState((prev) => ({
       ...prev,
-      selectedIdea: idea,
+      projectId: currentProjectId,
+      startupName: finalStartupName,
+      title: finalStartupName,
+      lastActiveStage: 'Overview',
+      selectedIdea: {
+        ...idea,
+        startupName: finalStartupName,
+      },
       roadmap,
       tasks: initialTasks,
       budget: initialBudget,
     }));
 
-    setActiveView('market-competitors');
+    // Requirement 3: Selected idea & named startup -> Venture Overview as the main workspace!
+    setActiveView('overview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Update startup name (Option A / Inline rename from Overview or Workspace)
+  const handleUpdateStartupName = async (newName) => {
+    const trimmed = (newName || '').trim();
+    if (!trimmed) return;
+
+    if (user && projectState.projectId) {
+      try {
+        await updateStartupName(projectState.projectId, trimmed);
+        refreshProjects();
+      } catch (err) {
+        console.error('Failed to update startup name in cloud:', err);
+      }
+    }
+
+    setProjectState((prev) => ({
+      ...prev,
+      startupName: trimmed,
+      title: trimmed,
+      selectedIdea: prev.selectedIdea ? { ...prev.selectedIdea, startupName: trimmed } : null,
+    }));
+  };
+
+  // Update problem statement without breaking venture analysis or wiping ideas
+  const handleUpdateProblemOnly = async (updatedProblem) => {
+    if (user && projectState.projectId) {
+      try {
+        await updateCloudProjectProblem(projectState.projectId, updatedProblem);
+        refreshProjects();
+      } catch (err) {
+        console.error('Failed to update problem statement in cloud:', err);
+      }
+    }
+
+    setProjectState((prev) => ({
+      ...prev,
+      problem: updatedProblem,
+    }));
+  };
+
+  // Explore a different direction from Overview: takes updated problem to Discover Studio
+  const handleExploreNewDirection = (updatedProblem) => {
+    setProjectState((prev) => ({
+      ...prev,
+      problem: updatedProblem,
+    }));
+    setActiveView('problem-discovery');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -336,7 +434,7 @@ function AppContent() {
     }));
   };
 
-  // Switch to a chosen venture from ProjectsModal
+  // Switch to a chosen venture from ProjectsModal or Homepage
   const handleSelectProject = async (projectId) => {
     try {
       const loaded = await getFullProject(projectId);
@@ -345,19 +443,21 @@ function AppContent() {
           ...prev,
           ...loaded,
           projectId: loaded.id,
+          startupName: loaded.startupName || loaded.title,
+          title: loaded.startupName || loaded.title,
           // CRITICAL: Retain continuous chat history so co-pilot memory is never wiped!
           chatHistory: prev.chatHistory,
           apiKey: prev.apiKey,
         }));
 
-        if (loaded.journeyStarted) {
-          setActiveView('overview');
-        } else if (loaded.selectedIdea) {
-          setActiveView('overview');
-        } else {
-          setActiveView('problem-discovery');
-        }
+        // Requirement 5: Overview is the default workspace destination
+        setActiveView('overview');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (user) {
+          updateVentureStage(loaded.id, 'Overview');
+          refreshProjects();
+        }
       }
     } catch (err) {
       console.error('Failed to switch project:', err);
@@ -410,6 +510,25 @@ function AppContent() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    if (user && projectState.projectId) {
+      const stageNameMap = {
+        overview: 'Overview',
+        'problem-discovery': 'Discover',
+        'market-competitors': 'Market Research',
+        validation: 'Validation',
+        'execution-plan': 'Roadmap',
+        analytics: 'Analytics',
+        collaborations: 'Collaborations',
+        'budget-advisor': 'Budget Advisor',
+        'decision-simulator': 'Decision Simulator',
+        'journey-dashboard': 'Journey Dashboard',
+      };
+      if (stageNameMap[view]) {
+        updateVentureStage(projectState.projectId, stageNameMap[view]);
+      }
+    }
+
     setActiveView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -436,7 +555,18 @@ function AppContent() {
             onStartJourney={() => {
               handleNavigateView('problem-discovery');
             }}
+            onContinueVenture={(pId) => {
+              if (pId && pId !== projectState.projectId) {
+                handleSelectProject(pId);
+              } else {
+                handleNavigateView('overview');
+              }
+            }}
+            onStartNewVenture={handleStartNewProject}
+            onSelectVenture={handleSelectProject}
             onWatchDemo={() => setIsHowItWorksOpen(true)}
+            projectState={projectState}
+            userProjects={cloudProjects}
           />
           <AboutSection
             onExplore={() => {
@@ -470,6 +600,12 @@ function AppContent() {
               onOpenAssistant={() => setIsAIOpen(true)}
               onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
               onSelectIdea={handleSelectIdea}
+              onUpdateStartupName={handleUpdateStartupName}
+              onUpdateProblemOnly={handleUpdateProblemOnly}
+              onExploreNewDirection={handleExploreNewDirection}
+              userProjects={cloudProjects}
+              onSelectProject={handleSelectProject}
+              onStartNewProject={handleStartNewProject}
             />
           )}
 

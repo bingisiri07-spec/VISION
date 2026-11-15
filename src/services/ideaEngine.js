@@ -413,3 +413,138 @@ Return ONLY valid JSON matching this schema:
   const parsed = JSON.parse(content);
   return Array.isArray(parsed) ? parsed : (parsed.ideas || parsed.startup_ideas || Object.values(parsed)[0]);
 }
+
+/**
+ * Generates creative, memorable, and professional startup name suggestions
+ * with meanings and rationale based on the selected startup idea and problem.
+ */
+export async function generateStartupNameSuggestions({ idea, problemStatement, apiKey }) {
+  const ideaName = idea?.name || 'Venture';
+  const category = (idea?.category || '').toLowerCase();
+  const uvp = idea?.uniqueValueProp || idea?.solution || '';
+  const problem = problemStatement || idea?.problemAddressed || '';
+
+  // 1. Direct Groq API call if user key provided
+  if (apiKey && apiKey.trim().startsWith('gsk_')) {
+    try {
+      const prompt = `You are an elite branding specialist and startup naming advisor.
+Propose 5 distinct, highly memorable, professional business names for this venture concept:
+- Concept: "${ideaName}"
+- Industry: "${idea?.category || 'Technology'}"
+- Problem Solved: "${problem}"
+- Core Solution / UVP: "${uvp}"
+
+Return strictly valid JSON with key "names" containing an array of 5 objects:
+{
+  "names": [
+    {
+      "name": "BrandName",
+      "style": "Modern Compound / Real-Word / Invented / Action-Driven",
+      "rationale": "Crisp 1-2 sentence explanation of why this name is memorable, pronounceable, and builds immediate trust with customers."
+    }
+  ]
+}
+Each name must be 1-2 words, catchy, easy to spell and pronounce, and suitable for a real commercial enterprise.`;
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.75,
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content;
+        const parsed = JSON.parse(content);
+        const list = parsed?.names || parsed?.startup_names || Object.values(parsed)[0];
+        if (Array.isArray(list) && list.length > 0) return list;
+      }
+    } catch (e) {
+      console.warn('[ideaEngine] Groq naming failed, activating generator:', e);
+    }
+  }
+
+  // 2. Intelligent algorithmic generation based on category, keywords, and UVP
+  await new Promise((r) => setTimeout(r, 450));
+  return getAlgorithmicNameSuggestions(idea, problemStatement);
+}
+
+function getAlgorithmicNameSuggestions(idea, problemStatement) {
+  const baseName = (idea?.name || 'Venture').replace(/[^a-zA-Z0-9]/g, '');
+  const cat = (idea?.category || '').toLowerCase();
+  const root = baseName.replace(/(App|Platform|SaaS|System|Hub|Tech|Box|Labs)$/i, '') || 'Nexus';
+
+  const categoryThemes = {
+    agriculture: [
+      { prefix: 'Agri', suffix: 'Flow', style: 'Modern Compound', meaning: 'Evokes seamless, uninterrupted agricultural logistics from farm to customer.' },
+      { prefix: 'Kisan', suffix: 'Pulse', style: 'Culturally Resonant', meaning: 'Direct connection to grassroots farmers combined with live, intelligent monitoring.' },
+      { prefix: 'Terra', suffix: 'Vault', style: 'Security & Freshness', meaning: 'Positions produce preservation and soil vitality as a protected asset.' },
+      { prefix: 'Crop', suffix: 'Sync', style: 'Action-Driven', meaning: 'Emphasizes coordinated distribution, preventing post-harvest waste.' },
+      { prefix: 'Verdant', suffix: '', style: 'Prestigious Real-Word', meaning: 'Evokes lush, flourishing growth, establishing organic trust.' }
+    ],
+    healthcare: [
+      { prefix: 'Cura', suffix: 'Link', style: 'Modern Compound', meaning: 'Latin root for care combined with connected healthcare pathways.' },
+      { prefix: 'Vital', suffix: 'Path', style: 'Outcome-Driven', meaning: 'Clear, reassuring direction for patients and healthcare providers.' },
+      { prefix: 'Pulse', suffix: 'Grid', style: 'Infrastructure Brand', meaning: 'Continuous clinical tele-monitoring across distributed clinics.' },
+      { prefix: 'Care', suffix: 'Nova', style: 'Invented Brandable', meaning: 'A fresh, renewed standard of accessible patient support.' },
+      { prefix: 'Aura', suffix: 'Health', style: 'Clean Minimalist', meaning: 'Approachable, warm medical guidance that lowers patient anxiety.' }
+    ],
+    education: [
+      { prefix: 'Skill', suffix: 'Forge', style: 'Action-Driven', meaning: 'Actionable transformation of raw potential into verified technical competency.' },
+      { prefix: 'Learn', suffix: 'Stack', style: 'Modern Tech', meaning: 'Modular, structured career upskilling built for the digital economy.' },
+      { prefix: 'Mentora', suffix: '', style: 'Invented Classical', meaning: 'Authoritative yet empathetic educational mentorship.' },
+      { prefix: 'Apex', suffix: 'Ed', style: 'Achievement-Focused', meaning: 'Reaching the peak of professional and academic capability.' },
+      { prefix: 'Vocata', suffix: '', style: 'Vocational Focus', meaning: 'Directly aligns practical trade training with high-demand industry employment.' }
+    ],
+    climate: [
+      { prefix: 'Eco', suffix: 'Shift', style: 'Impact-Driven', meaning: 'Accelerating the transition toward circular and carbon-negative practices.' },
+      { prefix: 'Terra', suffix: 'Loop', style: 'Circular Economy', meaning: 'Continuous recycling and closed-loop material recovery.' },
+      { prefix: 'Volt', suffix: 'Grid', style: 'Clean Energy', meaning: 'Resilient, decentralized clean power generation and storage.' },
+      { prefix: 'Aether', suffix: 'Zero', style: 'Atmospheric Focus', meaning: 'Pure atmospheric restoration and measurable emissions reduction.' },
+      { prefix: 'Verde', suffix: 'Core', style: 'Modern Compound', meaning: 'Environmental sustainability placed at the absolute foundation of the business.' }
+    ],
+    transportation: [
+      { prefix: 'Fleet', suffix: 'Sync', style: 'Operational Precision', meaning: 'Synchronized vehicle movement, eliminating idle deadhead miles.' },
+      { prefix: 'Shift', suffix: 'Logix', style: 'Tech Logistics', meaning: 'Next-generation algorithmic freight routing and transparent tracking.' },
+      { prefix: 'Freight', suffix: 'Pulse', style: 'Real-Time Visibility', meaning: 'Live heartbeat monitoring for interstate and municipal shipments.' },
+      { prefix: 'Relay', suffix: 'Point', style: 'Network Effect', meaning: 'Efficient transfer hubs enabling rapid turnaround times.' },
+      { prefix: 'Omni', suffix: 'Transit', style: 'Universal Scope', meaning: 'Integrated multi-modal urban transit coordination.' }
+    ],
+    technology: [
+      { prefix: 'Cogni', suffix: 'Flow', style: 'Intelligence & Speed', meaning: 'Autonomous machine intelligence streamlining complex human workflows.' },
+      { prefix: 'Stack', suffix: 'Craft', style: 'Developer Trust', meaning: 'Artisan precision and high-leverage architectural tools for software builders.' },
+      { prefix: 'Synap', suffix: 'Core', style: 'Deep Tech', meaning: 'The central neural connection driving enterprise decision automation.' },
+      { prefix: 'Automata', suffix: '', style: 'Prestigious Classical', meaning: 'Reliable, autonomous execution operating smoothly in the background.' },
+      { prefix: 'Prism', suffix: 'Logic', style: 'Clarity & Insight', meaning: 'Separates opaque, messy data into crystal-clear actionable intelligence.' }
+    ]
+  };
+
+  const matchedCategory = Object.keys(categoryThemes).find((k) => cat.includes(k)) || 'technology';
+  const templates = categoryThemes[matchedCategory];
+
+  // Pick suggestions with variation on root name
+  return templates.map((tmpl, idx) => {
+    let name;
+    if (idx === 0) {
+      name = `${root}${tmpl.suffix || 'Hub'}`;
+    } else if (tmpl.suffix) {
+      name = `${tmpl.prefix}${tmpl.suffix}`;
+    } else {
+      name = `${tmpl.prefix}`;
+    }
+
+    return {
+      name,
+      style: tmpl.style,
+      rationale: tmpl.meaning
+    };
+  });
+}

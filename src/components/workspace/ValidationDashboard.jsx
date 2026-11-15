@@ -107,8 +107,9 @@ export default function ValidationDashboard({
     const scalability = isHardwareOrPhysical ? Math.max(50, baseScore - 12) : Math.min(96, baseScore + 8);
 
     // 5. Resource Efficiency: Based on budget constraints & team size
-    const availableBudget = projectState.budget?.availableBudget || 1500;
-    const resourceReq = availableBudget < 1000 ? 60 : availableBudget < 5000 ? 76 : 88;
+    const rawBudget = projectState.budget?.availableBudget;
+    const availableBudget = typeof rawBudget === 'number' && rawBudget > 2000 ? rawBudget : 150000;
+    const resourceReq = availableBudget < 50000 ? 60 : availableBudget < 250000 ? 78 : 90;
 
     return [
       {
@@ -240,7 +241,7 @@ export default function ValidationDashboard({
               5-Axis Feasibility Radar
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-              • {idea.name}
+              • {projectState.startupName || projectState.title || idea.name}
             </span>
           </div>
 

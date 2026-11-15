@@ -95,8 +95,9 @@ serve(async (req: Request) => {
   const pendingTasks = Array.isArray(ctx.pendingTasks) ? ctx.pendingTasks.slice(0, 5).join(", ") : "None";
   const decisions = Array.isArray(ctx.decisions) ? ctx.decisions.slice(0, 5).join(" | ") : "None yet";
   const budget = (ctx.budget && typeof ctx.budget === "object") ? (ctx.budget as Record<string, unknown>) : null;
-  const availableBudget = budget?.availableBudget ?? 1500;
-  const monthlyBurn = budget?.monthlyBurnCapacity ?? 500;
+  const rawBudget = budget?.availableBudget;
+  const availableBudget = typeof rawBudget === 'number' && rawBudget > 2000 ? rawBudget : 150000;
+  const monthlyBurn = budget?.monthlyBurnCapacity ?? Math.round(availableBudget / 3);
 
   const systemPrompt = `You are VISION AI Co-Pilot, an elite startup mentor and software architect.
 You give sharp, actionable, realistic advice to early-stage founders.
@@ -107,7 +108,8 @@ Founder Project Context:
 - Target Audience: ${idea?.targetAudience || "N/A"}
 - Completed Tasks: ${completedTasks}
 - Pending Next Tasks: ${pendingTasks}
-- Budget Available: $${availableBudget} (Monthly capacity: ~$${monthlyBurn}/mo)
+- Currency & Financial Standard: All budgets, expenses, and pricing calculations MUST be generated in Indian Rupees (INR – ₹) using the Indian numbering format (e.g. ₹25,000, ₹1,50,000, ₹10,00,000). Do NOT quote amounts in USD ($) or treat foreign currency as 1:1.
+- Budget Available: ₹${Number(availableBudget).toLocaleString('en-IN')} (Monthly capacity: ~₹${Number(monthlyBurn).toLocaleString('en-IN')}/mo)
 - Saved Decisions: ${decisions}
 
 Always reference the founder's specific project context when relevant. Be concise, tactical, honest about uncertainty, and prioritize practical next steps over generic buzzwords.

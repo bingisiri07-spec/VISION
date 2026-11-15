@@ -21,7 +21,11 @@ export function AuthProvider({ children }) {
       if (error && error.code !== 'PGRST116') {
         console.warn('Could not fetch user profile:', error.message);
       }
-      setProfile(data || null);
+      if (data) {
+        setProfile({ ...data, fullName: data.full_name });
+      } else {
+        setProfile(null);
+      }
     } catch (err) {
       console.warn('Profile fetch error:', err);
     }
@@ -131,9 +135,14 @@ export function AuthProvider({ children }) {
       console.warn('Could not sync user metadata in auth.users:', metaErr);
     }
 
-    setProfile(data);
-    return data;
+    const normalizedProfile = data ? { ...data, fullName: data.full_name } : null;
+    setProfile(normalizedProfile);
+    return normalizedProfile;
   };
+
+  // Derive display name from profile full_name, user_metadata full_name, or sensible fallback
+  const userDisplayName = (profile?.full_name?.trim() || user?.user_metadata?.full_name?.trim() || '').trim();
+  const firstName = userDisplayName ? userDisplayName.split(' ')[0] : 'Founder';
 
   // Update password in Supabase Auth
   const updatePassword = async (newPassword) => {
@@ -158,6 +167,8 @@ export function AuthProvider({ children }) {
     user,
     session,
     profile,
+    userDisplayName,
+    firstName,
     loading,
     signUp,
     signIn,

@@ -11,6 +11,7 @@ export default function Navbar({
   onOpenProfileModal,
 }) {
   const { user, profile, signOut } = useAuth();
+  const founderName = profile?.full_name?.trim() || user?.user_metadata?.full_name?.trim() || 'Profile';
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
@@ -236,7 +237,7 @@ export default function Navbar({
                   >
                     <User size={13} color="#38bdf8" />
                     <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      Profile
+                      {founderName}
                     </span>
                   </button>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { calculateBudgetBreakdown } from '../../services/budgetEngine';
+import { calculateBudgetBreakdown, formatINR } from '../../services/budgetEngine';
 import {
-  DollarSign,
+  IndianRupee,
   TrendingDown,
   ShieldAlert,
   Sparkles,
@@ -15,12 +15,18 @@ import {
 } from 'lucide-react';
 
 export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedToDecisions }) {
-  const [availableBudget, setAvailableBudget] = useState(budgetState.availableBudget || 1500);
+  // Normalize legacy USD amounts (e.g., 1500 -> 150000)
+  const [availableBudget, setAvailableBudget] = useState(() => {
+    const raw = Number(budgetState?.availableBudget);
+    if (!raw) return 150000;
+    if (raw > 0 && raw < 5000) return raw === 1500 ? 150000 : raw * 84;
+    return raw;
+  });
   const [runwayMonths, setRunwayMonths] = useState(budgetState.runwayMonths || 3);
   const [teamSize, setTeamSize] = useState(budgetState.teamSize || 1);
   const [timeAvailable, setTimeAvailable] = useState(budgetState.timeAvailableHoursPerWeek || 20);
 
-  // Recalculate dynamic budget breakdown
+  // Recalculate dynamic budget breakdown in INR
   const breakdown = calculateBudgetBreakdown({
     availableBudget,
     teamSize,
@@ -39,7 +45,7 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', color: '#ffffff' }}>
       
       {/* Header */}
       <div style={{ marginBottom: '2.5rem' }}>
@@ -56,15 +62,15 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
             marginBottom: '0.5rem',
           }}
         >
-          <DollarSign size={16} />
-          <span>Feature 03 // Budget & Resource Advisor</span>
+          <IndianRupee size={16} />
+          <span>Feature 03 // Budget & Resource Advisor (INR)</span>
         </div>
         <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
-          Lean Financial Architecture
+          Lean Financial Architecture (₹ INR)
         </h1>
         <p style={{ color: 'var(--text-silver)', fontSize: '1.05rem', maxWidth: '780px' }}>
-          Model your capital, runway, and time allocation. Differentiate mission-critical infrastructure
-          from optional expenses to maximize your survival odds.
+          Model your capital, runway, and time allocation in Indian Rupees. Differentiate mission-critical infrastructure
+          from optional expenses to maximize your bootstrap survival runway.
         </p>
       </div>
 
@@ -83,24 +89,26 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
             marginBottom: '2rem',
           }}
         >
-          {/* Total Budget Slider */}
+          {/* Total Budget Slider (INR) */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>Available Capital</label>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>${availableBudget}</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>
+                {formatINR(availableBudget)}
+              </span>
             </div>
             <input
               type="range"
-              min={200}
-              max={10000}
-              step={100}
+              min={10000}
+              max={1000000}
+              step={5000}
               value={availableBudget}
               onChange={(e) => setAvailableBudget(Number(e.target.value))}
               style={{ width: '100%', accentColor: '#1d72fe', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
-              <span>$200 (Micro)</span>
-              <span>$10,000 (Seed)</span>
+              <span>₹10,000 (Micro MVP)</span>
+              <span>₹10,00,000 (Seed Grant)</span>
             </div>
           </div>
 
@@ -108,7 +116,9 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>Runway Target</label>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>{runwayMonths} Months</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>
+                {runwayMonths} Months
+              </span>
             </div>
             <input
               type="range"
@@ -129,7 +139,9 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>Time Commitment</label>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>{timeAvailable} hrs/wk</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>
+                {timeAvailable} hrs/wk
+              </span>
             </div>
             <input
               type="range"
@@ -150,7 +162,9 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>Active Team Size</label>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>{teamSize} {teamSize === 1 ? 'Founder' : 'Founders'}</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--cyan-glow)' }}>
+                {teamSize} {teamSize === 1 ? 'Founder' : 'Founders'}
+              </span>
             </div>
             <input
               type="range"
@@ -168,7 +182,17 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+        {/* Burn Rate Summary & Action */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Monthly Burn Capacity: <strong style={{ color: 'var(--cyan-bright)', fontSize: '1.1rem' }}>{formatINR(breakdown.monthlyBurnCapacity)}/mo</strong>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+              (All figures calibrated in Indian Rupees)
+            </div>
+          </div>
+
           <button
             onClick={handleApplyChanges}
             className="btn-primary-glow"
@@ -182,7 +206,7 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
       {/* Suggested Budget Allocations */}
       <div style={{ marginBottom: '3rem' }}>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', marginBottom: '1.25rem' }}>
-          Suggested Capital Allocation Envelope
+          Suggested Capital Allocation Envelope (INR)
         </h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
@@ -198,7 +222,7 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
                     {alloc.priority} ({alloc.percentage}%)
                   </span>
                   <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff' }}>
-                    ${alloc.amount}
+                    {formatINR(alloc.amount)}
                   </span>
                 </div>
 
@@ -309,7 +333,7 @@ export default function BudgetAdvisor({ budgetState, onUpdateBudget, onProceedTo
                 <th style={{ padding: '0.75rem 1rem' }}>Category</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Costly Default Tool</th>
                 <th style={{ padding: '0.75rem 1rem' }}>Free / Open-Source Alternative</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Monthly Savings</th>
+                <th style={{ padding: '0.75rem 1rem' }}>Monthly Savings (INR)</th>
               </tr>
             </thead>
             <tbody>

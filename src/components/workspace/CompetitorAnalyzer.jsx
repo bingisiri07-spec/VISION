@@ -250,7 +250,7 @@ export default function CompetitorAnalyzer({
               Feature 02 // Market & Competitor Landscape
             </div>
             <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
-              Competitive Landscape: {selectedIdea.name}
+              Competitive Landscape: {selectedIdea.startupName || selectedIdea.name}
             </h1>
             <p style={{ color: 'var(--text-silver)', fontSize: '1.05rem', maxWidth: '780px' }}>
               Identify direct incumbents, indirect substitutes, and status-quo workarounds.

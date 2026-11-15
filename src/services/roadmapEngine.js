@@ -12,7 +12,7 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
       ideaName,
       category,
       estimatedTimelineWeeks: 14,
-      estimatedBudgetRange: '$800 - $3,500 (Lean Bootstrap)',
+      estimatedBudgetRange: '₹60,000 – ₹2,50,000 (Lean Bootstrap)',
       targetAudience: selectedIdea?.targetAudience || 'Early adopters facing acute pain',
       mvpCoreScope: `A stripped-down, high-reliability prototype resolving the core bottleneck of: "${selectedIdea?.uniqueValueProp || 'the core solution'}"`,
       disclaimer: "All budgets, timelines, and market outcomes are scenario estimates based on lean startup benchmarks, not guaranteed financial results."
@@ -20,7 +20,7 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
     fundingOptions: [
       {
         type: 'Bootstrapping (Recommended for Phase 1-2)',
-        desc: 'Self-funded micro-budget ($500 - $1,500) using free tools, personal savings, or founder sweat equity.',
+        desc: 'Self-funded micro-budget (₹40,000 – ₹1,20,000) using free tools, personal savings, or founder sweat equity.',
         pros: 'Retain 100% equity; maintain absolute speed and autonomy.',
         cons: 'Requires personal financial discipline and lean tool selection.'
       },
@@ -31,8 +31,8 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
         cons: 'Requires high-conviction direct sales ability.'
       },
       {
-        type: 'Micro-Grants & University Competitions',
-        desc: 'Non-dilutive student grants ($1,000 - $15,000) from regional innovation hubs, climate/social impact funds.',
+        type: 'Micro-Grants & Startup Competitions',
+        desc: 'Non-dilutive grants (₹1,00,000 – ₹10,00,000) from Startup India, regional incubators (T-Hub, SINE), or university innovation funds.',
         pros: 'Free capital; institutional credibility.',
         cons: 'Application timelines can take 6-12 weeks.'
       },
@@ -49,9 +49,9 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
         title: 'Phase 1: Validation & Customer Discovery',
         timeframe: 'Weeks 1 – 2',
         objective: 'Confirm problem urgency, willingness to pay, and target audience workarounds before writing code.',
-        estimatedCost: '$50 – $150',
+        estimatedCost: '₹3,000 – ₹10,000',
         skillsNeeded: ['Customer Discovery Interviewing', 'Cold Outreach', 'Landing Page Copywriting'],
-        toolsRecommended: ['Google Forms / Tally (Free)', 'Carrd / Typedream ($9 or Free tier)', 'WhatsApp / LinkedIn for outreach'],
+        toolsRecommended: ['Google Forms / Tally (Free)', 'Carrd / Typedream (Free tier)', 'WhatsApp / LinkedIn for outreach'],
         tasks: [
           {
             id: 't1_1',
@@ -92,7 +92,7 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
         title: 'Phase 2: Lean MVP Prototyping',
         timeframe: 'Weeks 3 – 6',
         objective: 'Construct the simplest functional mechanism that delivers the core value proposition to initial test users.',
-        estimatedCost: '$150 – $400',
+        estimatedCost: '₹12,000 – ₹35,000',
         skillsNeeded: ['Frontend/Full-stack Development or No-Code workflow', 'Basic UI/UX in Figma', 'API integration'],
         toolsRecommended: ['React + Vite or Next.js (Free)', 'Supabase or Firebase (Free tiers)', 'Tailwind CSS', 'Vercel / Netlify (Free hosting)'],
         tasks: [
@@ -135,7 +135,7 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
         title: 'Phase 3: Closed Pilot & Initial Traction',
         timeframe: 'Weeks 7 – 10',
         objective: 'Onboard the first 25–50 real users, observe actual retention, and measure core value delivery.',
-        estimatedCost: '$200 – $600',
+        estimatedCost: '₹15,000 – ₹50,000',
         skillsNeeded: ['Hands-on Customer Onboarding (Concierge)', 'Analytics Tracking', 'Rapid Bug Triage'],
         toolsRecommended: ['PostHog / Umami (Analytics - Free)', 'Crisp / Intercom Free Tier', 'Sentry (Error tracking)'],
         tasks: [
@@ -178,9 +178,9 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
         title: 'Phase 4: Scalable Systems & Growth Distribution',
         timeframe: 'Weeks 11 – 14',
         objective: 'Formalize repeatable customer acquisition, legal/compliance groundwork, and prepare seed funding decks.',
-        estimatedCost: '$300 – $1,200',
+        estimatedCost: '₹25,000 – ₹1,00,000',
         skillsNeeded: ['Content & Distribution Strategy', 'Financial Modeling', 'Pitch Deck Creation'],
-        toolsRecommended: ['Notion / Pitch.com', 'Stripe / Lemon Squeezy', 'Google Workspace'],
+        toolsRecommended: ['Notion / Pitch.com', 'Razorpay / Cashfree / Stripe', 'Google Workspace'],
         tasks: [
           {
             id: 't4_1',
@@ -193,7 +193,7 @@ export function generateExecutionPlan(selectedIdea, userConstraints = {}) {
           {
             id: 't4_2',
             title: 'Formal Business Entity & Banking Setup',
-            desc: 'Incorporate legal structure (e.g. Delaware C-Corp or local private limited) and connect business payments.',
+            desc: 'Incorporate legal structure (e.g. MCA Private Limited or LLP) and connect business bank account / Razorpay payment gateway.',
             completed: false,
             estimatedDays: 7,
             category: 'Legal & Finance'

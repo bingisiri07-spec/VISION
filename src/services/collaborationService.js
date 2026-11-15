@@ -214,7 +214,7 @@ export async function getIncomingApplications() {
     .select(`
       *,
       collaboration_opportunities ( id, title ),
-      profiles!collaboration_applications_applicant_user_id_fkey ( full_name, email )
+      profiles ( full_name, email, contact_number, linkedin_url )
     `)
     .in('opportunity_id', oppIds)
     .order('created_at', { ascending: false });
@@ -350,4 +350,79 @@ export async function getMySponsorshipRequests() {
 
   if (error) throw error;
   return data || [];
+}
+
+/**
+ * Get active collaborators for the user:
+ * 1. Team members whose applications were accepted on opportunities posted by the user.
+ * 2. Opportunities where the current user was accepted as a collaborator.
+ */
+export async function getActiveCollaborators() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { teamMembers: [], joinedVentures: [] };
+
+  try {
+    // 1. Fetch current user's opportunities
+    const { data: opps } = await supabase
+      .from('collaboration_opportunities')
+      .select('id, title, collab_type, skills_needed, project_id, projects(title)')
+      .eq('user_id', user.id);
+
+    const oppIds = (opps || []).map((o) => o.id);
+    let teamMembers = [];
+
+    if (oppIds.length > 0) {
+      const { data: acceptedApps, error: appErr } = await supabase
+        .from('collaboration_applications')
+        .select(`
+          id,
+          status,
+          introduction,
+          created_at,
+          applicant_user_id,
+          opportunity_id,
+          collaboration_opportunities ( id, title, collab_type ),
+          profiles ( full_name, email, contact_number, linkedin_url, role_title, bio )
+        `)
+        .in('opportunity_id', oppIds)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false });
+
+      if (!appErr && acceptedApps) {
+        teamMembers = acceptedApps;
+      }
+    }
+
+    // 2. Fetch opportunities where the current user's application was accepted
+    const { data: joinedApps, error: joinedErr } = await supabase
+      .from('collaboration_applications')
+      .select(`
+        id,
+        status,
+        introduction,
+        created_at,
+        opportunity_id,
+        collaboration_opportunities (
+          id,
+          title,
+          description,
+          venture_summary,
+          collab_type,
+          user_id,
+          profiles ( full_name, email, contact_number, linkedin_url ),
+          projects ( title )
+        )
+      `)
+      .eq('applicant_user_id', user.id)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: false });
+
+    return {
+      teamMembers,
+      joinedVentures: (!joinedErr && joinedApps) ? joinedApps : []
+    };
+  } catch (err) {
+    console.error('[collabService] getActiveCollaborators error:', err);
+    return { teamMembers: [], joinedVentures: [] };
+  }
 }

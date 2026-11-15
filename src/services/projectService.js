@@ -15,11 +15,21 @@ export async function getUserProjects() {
     .from('projects')
     .select('*')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('last_active_at', { ascending: false, nullsFirst: false });
 
   if (error) {
-    console.error('Error fetching user projects:', error.message);
-    throw error;
+    // Graceful fallback to created_at if last_active_at is not indexed
+    const { data: fallbackData, error: fbErr } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (fbErr) {
+      console.error('Error fetching user projects:', fbErr.message);
+      throw fbErr;
+    }
+    return fallbackData || [];
   }
   return data || [];
 }
@@ -65,6 +75,7 @@ export async function getAllUserVenturesSummary() {
 // 2. Create a new project row in Supabase
 export async function createCloudProject({
   title,
+  startupName,
   domain,
   problemStatement,
   affectedAudience,
@@ -74,11 +85,14 @@ export async function createCloudProject({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User must be authenticated to create a cloud project');
 
+  const finalName = (startupName || title || 'Untitled Venture').trim();
+
   const { data, error } = await supabase
     .from('projects')
     .insert({
       user_id: user.id,
-      title: title || 'Untitled Venture',
+      title: finalName,
+      startup_name: finalName,
       domain: domain || 'technology',
       problem_statement: problemStatement,
       affected_audience: affectedAudience || '',
@@ -86,6 +100,8 @@ export async function createCloudProject({
       goals: goals || '',
       status: 'discovery',
       journey_started: false,
+      last_active_stage: 'Overview',
+      last_active_at: new Date().toISOString(),
     })
     .select()
     .single();
@@ -132,8 +148,8 @@ export async function saveCloudIdeas(projectId, ideas = []) {
   return data;
 }
 
-// 4. Mark an idea as selected and update project title
-export async function selectCloudIdea(projectId, ideaId, ideaName) {
+// 4. Mark an idea as selected and update project title & startup_name
+export async function selectCloudIdea(projectId, ideaId, startupName) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !projectId) return;
 
@@ -151,12 +167,87 @@ export async function selectCloudIdea(projectId, ideaId, ideaName) {
       .eq('id', ideaId);
   }
 
-  // Update project title to match chosen startup name
-  if (ideaName) {
+  // Update project title and startup_name
+  const updatePayload = {
+    last_active_at: new Date().toISOString(),
+    last_active_stage: 'Overview',
+  };
+  if (startupName && startupName.trim()) {
+    updatePayload.title = startupName.trim();
+    updatePayload.startup_name = startupName.trim();
+  }
+
+  await supabase
+    .from('projects')
+    .update(updatePayload)
+    .eq('id', projectId);
+}
+
+// 4b. Update startup name directly (without changing selected idea or resetting data)
+export async function updateStartupName(projectId, startupName) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !projectId || !startupName?.trim()) return null;
+
+  const trimmed = startupName.trim();
+  const { data, error } = await supabase
+    .from('projects')
+    .update({
+      startup_name: trimmed,
+      title: trimmed,
+      updated_at: new Date().toISOString(),
+      last_active_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating startup name:', error.message);
+    throw error;
+  }
+  return data;
+}
+
+// 4c. Update problem statement without breaking venture analysis or creating duplicates
+export async function updateCloudProjectProblem(projectId, problem) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !projectId || !problem) return null;
+
+  const { data, error } = await supabase
+    .from('projects')
+    .update({
+      problem_statement: problem.problemStatement,
+      domain: problem.domain || 'technology',
+      affected_audience: problem.affectedAudience || '',
+      constraints: problem.constraints || '',
+      goals: problem.goals || '',
+      updated_at: new Date().toISOString(),
+      last_active_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating venture problem statement:', error.message);
+    throw error;
+  }
+  return data;
+}
+
+// 4d. Update last active stage telemetry
+export async function updateVentureStage(projectId, stageName) {
+  if (!projectId || !stageName) return;
+  try {
     await supabase
       .from('projects')
-      .update({ title: ideaName })
+      .update({
+        last_active_stage: stageName,
+        last_active_at: new Date().toISOString(),
+      })
       .eq('id', projectId);
+  } catch (err) {
+    console.warn('Error updating venture stage:', err);
   }
 }
 
@@ -279,11 +370,11 @@ export async function saveCloudBudget(projectId, budgetState) {
   const payload = {
     project_id: projectId,
     user_id: user.id,
-    available_budget: budgetState.availableBudget || 1500,
+    available_budget: budgetState.availableBudget || 150000,
     runway_months: budgetState.runwayMonths || 3,
     team_size: budgetState.teamSize || 1,
     hours_per_week: budgetState.timeAvailableHoursPerWeek || 20,
-    monthly_burn: budgetState.monthlyBurnCapacity || 500,
+    monthly_burn: budgetState.monthlyBurnCapacity || 50000,
     allocations: budgetState.allocations || [],
     essential_expenses: budgetState.essentialExpenses || [],
     optional_expenses: budgetState.optionalExpenses || [],
@@ -406,9 +497,16 @@ export async function getFullProject(projectId) {
 
   // Find selected idea
   const selectedIdea = (ideas || []).find((i) => i.is_selected) || ideas?.[0] || null;
+  const effectiveStartupName = project.startup_name || project.title || selectedIdea?.name || 'My Startup';
 
   return {
     id: project.id,
+    startupName: effectiveStartupName,
+    title: effectiveStartupName,
+    lastActiveStage: project.last_active_stage || 'Overview',
+    lastActiveAt: project.last_active_at || project.updated_at || project.created_at,
+    createdAt: project.created_at,
+    updatedAt: project.updated_at,
     problem: {
       domain: project.domain,
       problemStatement: project.problem_statement,
@@ -466,11 +564,15 @@ export async function getFullProject(projectId) {
       isCustom: t.is_custom,
     })),
     budget: budget ? {
-      availableBudget: Number(budget.available_budget),
+      availableBudget: Number(budget.available_budget) < 5000
+        ? (Number(budget.available_budget) === 1500 ? 150000 : Math.round(Number(budget.available_budget) * 83.5))
+        : Number(budget.available_budget),
       runwayMonths: Number(budget.runway_months),
       teamSize: Number(budget.team_size),
       timeAvailableHoursPerWeek: Number(budget.hours_per_week),
-      monthlyBurnCapacity: Number(budget.monthly_burn),
+      monthlyBurnCapacity: Number(budget.monthly_burn) < 2000
+        ? Math.round((Number(budget.available_budget) < 5000 ? 150000 : Number(budget.available_budget)) / (Number(budget.runway_months) || 3))
+        : Number(budget.monthly_burn),
       allocations: budget.allocations || [],
       essentialExpenses: budget.essential_expenses || [],
       optionalExpenses: budget.optional_expenses || [],
@@ -577,7 +679,8 @@ export async function migrateLocalStateToSupabase(localState) {
 
   // 1. Create project
   const project = await createCloudProject({
-    title: localState.selectedIdea?.name || 'My First Venture',
+    title: localState.startupName || localState.title || localState.selectedIdea?.name || 'My First Venture',
+    startupName: localState.startupName || localState.title || localState.selectedIdea?.name || 'My First Venture',
     domain: localState.problem.domain || 'technology',
     problemStatement: localState.problem.problemStatement,
     affectedAudience: localState.problem.affectedAudience || '',

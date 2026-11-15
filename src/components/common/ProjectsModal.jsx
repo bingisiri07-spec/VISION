@@ -208,7 +208,7 @@ export default function ProjectsModal({
                   }}
                 >
                   <div style={{ flex: 1, paddingRight: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                       <span
                         style={{
                           fontSize: '0.7rem',
@@ -223,6 +223,20 @@ export default function ProjectsModal({
                       >
                         {p.domain}
                       </span>
+                      {p.last_active_stage && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '9999px',
+                            background: 'rgba(147, 197, 253, 0.12)',
+                            color: '#93c5fd',
+                          }}
+                        >
+                          Stage: {p.last_active_stage}
+                        </span>
+                      )}
                       {p.journey_started && (
                         <span
                           style={{
@@ -249,7 +263,7 @@ export default function ProjectsModal({
                     </div>
 
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
-                      {p.title}
+                      {p.startup_name || p.title || 'Untitled Venture'}
                     </h3>
 
                     <p

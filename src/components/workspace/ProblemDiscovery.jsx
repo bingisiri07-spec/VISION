@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DOMAIN_CATEGORIES, generateStartupIdeas } from '../../services/ideaEngine';
+import StartupNamingModal from './StartupNamingModal';
 import {
   Lightbulb,
   Sparkles,
@@ -42,6 +43,7 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
   const [error, setError] = useState('');
   const [isFallback, setIsFallback] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState([]);
+  const [namingTargetIdea, setNamingTargetIdea] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -485,18 +487,18 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
                   <div style={{ paddingTop: '1.25rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
                     <button
                       type="button"
-                      onClick={() => onSelectIdea(idea)}
+                      onClick={() => setNamingTargetIdea(idea)}
                       className={isSelected ? "btn-primary-glow" : "btn-secondary-pill"}
                       style={{ width: '100%', justifyContent: 'center' }}
                     >
                       {isSelected ? (
                         <>
                           <Check size={18} />
-                          <span>Active Idea (Roadmap Ready)</span>
+                          <span>Active Idea (Click to Rename or Switch)</span>
                         </>
                       ) : (
                         <>
-                          <span>Select This Idea & Generate Roadmap</span>
+                          <span>Select This Idea & Name Startup</span>
                           <ArrowRight size={16} />
                         </>
                       )}
@@ -507,6 +509,22 @@ export default function ProblemDiscovery({ projectState, onIdeasGenerated, onSel
             })}
           </div>
         </div>
+      )}
+
+      {/* Startup Naming Experience Modal */}
+      {namingTargetIdea && (
+        <StartupNamingModal
+          isOpen={Boolean(namingTargetIdea)}
+          selectedIdea={namingTargetIdea}
+          problemStatement={problemStatement}
+          currentName={namingTargetIdea.name}
+          apiKey={apiKey}
+          onConfirmName={(confirmedName) => {
+            onSelectIdea(namingTargetIdea, confirmedName);
+            setNamingTargetIdea(null);
+          }}
+          onClose={() => setNamingTargetIdea(null)}
+        />
       )}
 
       <style>{`

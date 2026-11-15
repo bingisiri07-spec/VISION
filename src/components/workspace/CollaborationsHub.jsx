@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, Plus, Sparkles, AlertTriangle, CheckCircle2, Loader,
   Handshake, Star, ChevronDown, ChevronUp, Trash2, X,
-  UserCheck, Briefcase, ArrowRight, RefreshCw, Info, DollarSign
+  UserCheck, Briefcase, ArrowRight, RefreshCw, Info, DollarSign,
+  Mail, Phone, Linkedin, ExternalLink, ShieldCheck
 } from 'lucide-react';
 import {
   getOpenOpportunities, getMyOpportunities, createOpportunity,
@@ -11,7 +12,9 @@ import {
   updateApplicationStatus, withdrawApplication,
   getSponsorshipRequests, createSponsorshipRequest,
   deleteSponsorshipRequest, getMySponsorshipRequests,
+  getActiveCollaborators
 } from '../../services/collaborationService';
+import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 
 // ─── Reusable feedback banner ────────────────────────────────────────────────
@@ -425,12 +428,12 @@ function CreateSponsorshipForm({ userProjects, onCreated, onCancel }) {
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Specific Ask / Details</label>
-          <textarea value={askDetails} onChange={(e) => setAskDetails(e.target.value)} placeholder="What exactly are you looking for? (e.g. \$5,000 seed grant, AWS credits for 12 months, weekly mentorship calls)" rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+          <textarea value={askDetails} onChange={(e) => setAskDetails(e.target.value)} placeholder="What exactly are you looking for? (e.g. ₹5,00,000 seed grant, AWS credits for 12 months, weekly mentorship calls)" rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button type="submit" disabled={loading} className="btn-primary-glow" style={{ flex: 1, justifyContent: 'center' }}>
-            {loading ? <><Loader size={15} className="spin" /><span>Posting...</span></> : <><DollarSign size={15} /><span>Post Request</span></>}
+            {loading ? <><Loader size={15} className="spin" /><span>Posting...</span></> : <><Sparkles size={15} /><span>Post Request</span></>}
           </button>
           <button type="button" onClick={onCancel} className="btn-secondary-pill">Cancel</button>
         </div>
@@ -446,6 +449,7 @@ export default function CollaborationsHub({ projectState }) {
   const [opportunities, setOpportunities] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [incomingApplications, setIncomingApplications] = useState([]);
+  const [activeCollaborators, setActiveCollaborators] = useState({ teamMembers: [], joinedVentures: [] });
   const [sponsorshipRequests, setSponsorshipRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -456,31 +460,53 @@ export default function CollaborationsHub({ projectState }) {
 
   // Build a list of user's saved ventures for dropdowns
   const userProjects = projectState?.projectId
-    ? [{ id: projectState.projectId, title: projectState.selectedIdea?.name || 'Current Venture' }]
+    ? [{ id: projectState.projectId, title: projectState.startupName || projectState.title || projectState.selectedIdea?.name || 'Current Venture' }]
     : [];
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [opps, apps, incoming, sponsorships] = await Promise.all([
+      const [opps, apps, incoming, collabs, sponsorships] = await Promise.all([
         getOpenOpportunities(),
         user ? getMyApplications() : Promise.resolve([]),
         user ? getIncomingApplications() : Promise.resolve([]),
+        user ? getActiveCollaborators() : Promise.resolve({ teamMembers: [], joinedVentures: [] }),
         getSponsorshipRequests(),
       ]);
       setOpportunities(opps);
       setMyApplications(apps);
       setIncomingApplications(incoming);
+      setActiveCollaborators(collabs);
       setSponsorshipRequests(sponsorships);
     } catch (err) {
+      console.error('[CollaborationsHub] loadAll error:', err);
       setError('Failed to load collaboration data. Please try refreshing.');
     } finally {
       setLoading(false);
     }
   }, [user]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  // Real-time listener for updates to collaboration applications and opportunities
+  useEffect(() => {
+    const channel = supabase
+      .channel('collab-realtime-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collaboration_applications' }, () => {
+        loadAll();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collaboration_opportunities' }, () => {
+        loadAll();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadAll]);
 
   const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 4000); };
 
@@ -533,10 +559,14 @@ export default function CollaborationsHub({ projectState }) {
     } catch (err) { setError(err.message); }
   };
 
+  const pendingIncomingCount = incomingApplications.filter(a => a.status === 'pending').length;
+  const acceptedTeamCount = (activeCollaborators?.teamMembers?.length || 0) + (activeCollaborators?.joinedVentures?.length || 0);
+
   const tabs = [
     { id: 'browse', label: 'Browse Opportunities', icon: <Users size={15} /> },
     { id: 'my-apps', label: 'My Applications', icon: <UserCheck size={15} /> },
-    { id: 'incoming', label: 'Incoming Requests', icon: <Briefcase size={15} /> },
+    { id: 'incoming', label: `Incoming Requests${pendingIncomingCount ? ` (${pendingIncomingCount})` : ''}`, icon: <Briefcase size={15} /> },
+    { id: 'collaborators', label: `My Collaborators${acceptedTeamCount ? ` (${acceptedTeamCount})` : ''}`, icon: <Handshake size={15} /> },
     { id: 'sponsorship', label: 'Sponsorship', icon: <Star size={15} /> },
   ];
 
@@ -735,6 +765,25 @@ export default function CollaborationsHub({ projectState }) {
                         <div style={{ fontSize: '0.84rem', color: 'var(--text-silver)', lineHeight: 1.5 }}>
                           {app.introduction}
                         </div>
+                        {app.status === 'accepted' && (
+                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+                            {app.profiles?.email && (
+                              <a href={`mailto:${app.profiles.email}`} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#38bdf8' }}>
+                                <Mail size={13} /> {app.profiles.email}
+                              </a>
+                            )}
+                            {app.profiles?.contact_number && (
+                              <a href={`tel:${app.profiles.contact_number}`} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#38bdf8' }}>
+                                <Phone size={13} /> {app.profiles.contact_number}
+                              </a>
+                            )}
+                            {app.profiles?.linkedin_url && (
+                              <a href={app.profiles.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#38bdf8' }}>
+                                <Linkedin size={13} /> LinkedIn Profile <ExternalLink size={11} />
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end' }}>
                         <StatusBadge status={app.status} />
@@ -748,6 +797,156 @@ export default function CollaborationsHub({ projectState }) {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          )}
+
+          {/* ── TAB: MY COLLABORATORS ── */}
+          {activeTab === 'collaborators' && (
+            <div>
+              {!user ? (
+                <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <Info size={36} color="#38bdf8" style={{ margin: '0 auto 1rem auto' }} />
+                  <p style={{ color: 'var(--text-muted)' }}>Sign in to view your collaborators.</p>
+                </div>
+              ) : (activeCollaborators.teamMembers.length === 0 && activeCollaborators.joinedVentures.length === 0) ? (
+                <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <Handshake size={44} color="#38bdf8" style={{ margin: '0 auto 1rem auto' }} />
+                  <h3 style={{ color: '#ffffff', fontWeight: 700, marginBottom: '0.5rem' }}>No Active Collaborators Yet</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '520px', margin: '0 auto 1.5rem auto', lineHeight: 1.6 }}>
+                    Once you accept an incoming application on one of your posted opportunities, or your application to another venture is accepted, your active teammates and venture partnerships will appear here.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => setActiveTab('browse')} className="btn-primary-glow">
+                      <span>Explore Opportunities</span><ArrowRight size={15} />
+                    </button>
+                    <button onClick={() => setShowCreateOpp(true)} className="btn-secondary-pill">
+                      <Plus size={15} /><span>Post an Opportunity</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {/* Section 1: Team members who joined the current user's ventures */}
+                  {activeCollaborators.teamMembers.length > 0 && (
+                    <div style={{ marginBottom: '2.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <Users size={18} color="#38bdf8" />
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+                          Team Members on Your Ventures ({activeCollaborators.teamMembers.length})
+                        </h3>
+                      </div>
+                      {activeCollaborators.teamMembers.map((member) => (
+                        <div key={member.id} className="glass-card" style={{ padding: '1.5rem', marginBottom: '1rem', border: '1px solid rgba(56,189,248,0.2)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
+                                  {member.profiles?.full_name || member.profiles?.email?.split('@')[0] || 'Team Collaborator'}
+                                </h4>
+                                {member.profiles?.role_title && (
+                                  <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', fontWeight: 600 }}>
+                                    {member.profiles.role_title}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', borderRadius: '9999px', background: 'rgba(34,197,94,0.18)', color: '#86efac', fontWeight: 700 }}>
+                                  Active Collaborator
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.6rem' }}>
+                                Role: <strong style={{ color: 'var(--text-silver)' }}>{member.collaboration_opportunities?.title}</strong> ({member.collaboration_opportunities?.collab_type || 'teammate'})
+                              </div>
+                              {member.profiles?.bio && (
+                                <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '0.6rem', fontStyle: 'italic' }}>
+                                  "{member.profiles.bio}"
+                                </p>
+                              )}
+                              <div style={{ fontSize: '0.84rem', color: 'var(--text-silver)', lineHeight: 1.5, background: 'rgba(2,6,18,0.4)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.75rem' }}>
+                                <strong style={{ color: 'var(--cyan-glow)' }}>Contribution Pitch:</strong> {member.introduction}
+                              </div>
+                              {/* Direct contact channels */}
+                              <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', fontSize: '0.825rem' }}>
+                                {member.profiles?.email && (
+                                  <a href={`mailto:${member.profiles.email}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                    <Mail size={14} /> <span>{member.profiles.email}</span>
+                                  </a>
+                                )}
+                                {member.profiles?.contact_number && (
+                                  <a href={`tel:${member.profiles.contact_number}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                    <Phone size={14} /> <span>{member.profiles.contact_number}</span>
+                                  </a>
+                                )}
+                                {member.profiles?.linkedin_url && (
+                                  <a href={member.profiles.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                    <Linkedin size={14} /> <span>LinkedIn Profile</span> <ExternalLink size={12} />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Section 2: Ventures the current user joined */}
+                  {activeCollaborators.joinedVentures.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <Briefcase size={18} color="#38bdf8" />
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+                          Ventures You Have Joined ({activeCollaborators.joinedVentures.length})
+                        </h3>
+                      </div>
+                      {activeCollaborators.joinedVentures.map((item) => {
+                        const opp = item.collaboration_opportunities;
+                        const founder = opp?.profiles;
+                        const founderName = founder?.full_name || founder?.email?.split('@')[0] || 'Venture Founder';
+                        return (
+                          <div key={item.id} className="glass-card" style={{ padding: '1.5rem', marginBottom: '1rem', border: '1px solid rgba(34,197,94,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
+                                    {opp?.projects?.title || opp?.title || 'Partner Venture'}
+                                  </h4>
+                                  <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', borderRadius: '9999px', background: 'rgba(34,197,94,0.18)', color: '#86efac', fontWeight: 700 }}>
+                                    Accepted Member
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.6rem' }}>
+                                  Opportunity: <strong style={{ color: 'var(--text-silver)' }}>{opp?.title}</strong> · Founded by <strong style={{ color: '#ffffff' }}>{founderName}</strong>
+                                </div>
+                                {opp?.description && (
+                                  <p style={{ fontSize: '0.85rem', color: 'var(--text-silver)', lineHeight: 1.5, marginBottom: '0.75rem' }}>
+                                    {opp.description}
+                                  </p>
+                                )}
+                                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', fontSize: '0.825rem' }}>
+                                  {founder?.email && (
+                                    <a href={`mailto:${founder.email}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                      <Mail size={14} /> <span>Contact Founder ({founder.email})</span>
+                                    </a>
+                                  )}
+                                  {founder?.contact_number && (
+                                    <a href={`tel:${founder.contact_number}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                      <Phone size={14} /> <span>{founder.contact_number}</span>
+                                    </a>
+                                  )}
+                                  {founder?.linkedin_url && (
+                                    <a href={founder.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8' }}>
+                                      <Linkedin size={14} /> <span>Founder LinkedIn</span> <ExternalLink size={12} />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

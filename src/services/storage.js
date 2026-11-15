@@ -8,6 +8,10 @@
 const STORAGE_KEY = 'vision_platform_state_v1';
 
 export const initialProjectState = {
+  projectId: null,
+  startupName: '',
+  title: '',
+  lastActiveStage: 'Overview',
   problem: null,
   ideas: [],
   selectedIdea: null,
@@ -15,8 +19,8 @@ export const initialProjectState = {
   journeyStartedAt: null,
   roadmap: [],
   budget: {
-    availableBudget: 1500,
-    expectedExpenses: 1200,
+    availableBudget: 150000,
+    expectedExpenses: 120000,
     runwayMonths: 3,
     teamSize: 1,
     timeAvailableHoursPerWeek: 20,
