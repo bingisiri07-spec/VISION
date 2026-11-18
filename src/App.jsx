@@ -10,6 +10,7 @@ import HowItWorksModal from './components/landing/HowItWorksModal';
 import AuthModal from './components/common/AuthModal';
 import ProjectsModal from './components/common/ProjectsModal';
 import ProfileModal from './components/common/ProfileModal';
+import { CheckCircle2 } from 'lucide-react';
 
 import WorkspaceShell from './components/workspace/WorkspaceShell';
 import OverviewDashboard from './components/workspace/OverviewDashboard';
@@ -25,7 +26,7 @@ import JourneyDashboard from './components/workspace/JourneyDashboard';
 import AIAssistantDrawer from './components/workspace/AIAssistantDrawer';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { loadSavedState, saveState, initialProjectState } from './services/storage';
+import { loadSavedState, saveState, clearGuestState, initialProjectState } from './services/storage';
 import { generateExecutionPlan } from './services/roadmapEngine';
 import { calculateBudgetBreakdown } from './services/budgetEngine';
 import {
@@ -50,33 +51,48 @@ import {
 } from './services/projectService';
 
 function AppContent() {
-  const { user } = useAuth();
-  const [projectState, setProjectState] = useState(() => loadSavedState());
+  const { user, loading: authLoading } = useAuth();
+  const [projectState, setProjectState] = useState(() => loadSavedState(user?.id || null));
   const [activeView, setActiveView] = useState('landing');
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalConfig, setAuthModalConfig] = useState({
+    isOpen: false,
+    reasonTitle: '',
+    reasonDescription: '',
+    defaultIsSignUp: false,
+  });
   const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [cloudProjects, setCloudProjects] = useState([]);
-  const migrationAttempted = useRef(false);
+  const [isProjectsLoading, setIsProjectsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
+  const pendingRestrictedAction = useRef(null);
+  const initialSyncHandled = useRef(false);
 
-  // Synchronize state to localStorage whenever modified
+  // Synchronize state to persistent storage (isolated by userId or guest storage)
   useEffect(() => {
-    saveState(projectState);
-  }, [projectState]);
+    saveState(projectState, user?.id || null);
+  }, [projectState, user?.id]);
 
   // Refresh user projects from Supabase
   const refreshProjects = async () => {
     if (!user) {
       setCloudProjects([]);
-      return;
+      setIsProjectsLoading(false);
+      return [];
     }
+    setIsProjectsLoading(true);
     try {
       const list = await getUserProjects();
       setCloudProjects(list || []);
+      return list || [];
     } catch (err) {
       console.warn('Could not refresh projects list:', err);
+      return [];
+    } finally {
+      setIsProjectsLoading(false);
     }
   };
 
@@ -95,19 +111,34 @@ function AppContent() {
     refreshProjects();
   }, [user]);
 
-  // Handle automatic migration of draft localStorage project upon user sign-in
+  // Handle user authentication transitions without discarding in-progress guest workflows
   useEffect(() => {
-    if (!user || migrationAttempted.current) return;
-    migrationAttempted.current = true;
+    if (authLoading) return;
 
-    async function handleInitialCloudSync() {
+    if (!user) {
+      initialSyncHandled.current = false;
+      setCloudProjects([]);
+      return;
+    }
+
+    if (initialSyncHandled.current) return;
+    initialSyncHandled.current = true;
+
+    async function handleUserLoginSync() {
       try {
-        const fetchedProjects = await getUserProjects();
-        setCloudProjects(fetchedProjects || []);
+        const fetched = await getUserProjects();
+        setCloudProjects(fetched || []);
 
-        // If user already has cloud projects and local state has no unsaved project, load their latest
-        if (fetchedProjects.length > 0 && !projectState.projectId) {
-          const latest = await getFullProject(fetchedProjects[0].id);
+        // Requirement 4: Never discard guest's generated results after authentication.
+        // If user already has an active local/guest draft (problem statement or selected idea),
+        // preserve it and do NOT overwrite it with a previous cloud project!
+        const hasUnsavedLocalDraft = Boolean(
+          !projectState.projectId && (projectState.problem?.problemStatement || projectState.selectedIdea)
+        );
+
+        if (!hasUnsavedLocalDraft && fetched && fetched.length > 0 && !projectState.projectId) {
+          // No unsaved draft: load user's latest cloud venture
+          const latest = await getFullProject(fetched[0].id);
           if (latest) {
             setProjectState((prev) => ({
               ...prev,
@@ -115,32 +146,110 @@ function AppContent() {
               projectId: latest.id,
               startupName: latest.startupName || latest.title,
               title: latest.startupName || latest.title,
-              // Keep continuous chat history intact
               chatHistory: prev.chatHistory,
               apiKey: prev.apiKey,
             }));
-            return;
-          }
-        }
-
-        // If user has a local draft in localStorage that isn't yet in Supabase, migrate it
-        if (projectState.problem?.problemStatement && !projectState.projectId) {
-          const newProjectId = await migrateLocalStateToSupabase(projectState);
-          if (newProjectId) {
-            setProjectState((prev) => ({
-              ...prev,
-              projectId: newProjectId,
-            }));
-            refreshProjects();
           }
         }
       } catch (err) {
-        console.warn('Initial cloud synchronization check note:', err);
+        console.warn('Cloud sync error after sign-in:', err);
       }
     }
 
-    handleInitialCloudSync();
-  }, [user]);
+    handleUserLoginSync();
+  }, [user, authLoading]);
+
+  // Save current venture permanently to Supabase cloud
+  const handleSaveVenture = async () => {
+    if (!projectState.problem?.problemStatement && !projectState.selectedIdea) {
+      alert('Please start by describing a problem in Problem Discovery before saving.');
+      return;
+    }
+
+    if (!user) {
+      // Guest attempted to save: open Supabase auth modal with clear explanation
+      pendingRestrictedAction.current = 'save_venture';
+      setAuthModalConfig({
+        isOpen: true,
+        reasonTitle: 'Save Your Venture Permanently',
+        reasonDescription: 'Sign in to your account or create a new founder account to permanently save your venture, AI-generated opportunities, competitor analysis, and execution roadmap to your VISION cloud account.',
+        defaultIsSignUp: false,
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const newProjectId = await migrateLocalStateToSupabase(projectState);
+      if (newProjectId) {
+        setProjectState((prev) => ({
+          ...prev,
+          projectId: newProjectId,
+        }));
+        clearGuestState();
+        await refreshProjects();
+        setSaveSuccessMessage('Venture successfully saved to your cloud account!');
+        setTimeout(() => setSaveSuccessMessage(''), 5000);
+        handleNavigateView('overview');
+      }
+    } catch (err) {
+      console.error('Failed to save venture to Supabase:', err);
+      alert('Failed to save venture. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handler for post-auth continuation
+  const handleAuthSuccess = async () => {
+    const action = pendingRestrictedAction.current;
+    pendingRestrictedAction.current = null;
+
+    if (action === 'save_venture') {
+      setIsSaving(true);
+      try {
+        const newProjectId = await migrateLocalStateToSupabase(projectState);
+        if (newProjectId) {
+          setProjectState((prev) => ({
+            ...prev,
+            projectId: newProjectId,
+          }));
+          clearGuestState();
+          await refreshProjects();
+          setSaveSuccessMessage('Venture successfully saved to your cloud account!');
+          setTimeout(() => setSaveSuccessMessage(''), 5000);
+          handleNavigateView('overview');
+        }
+      } catch (err) {
+        console.error('Failed to save venture after authentication:', err);
+      } finally {
+        setIsSaving(false);
+      }
+    } else if (action === 'my_ventures') {
+      setIsProjectsModalOpen(true);
+    } else if (action === 'collaborations') {
+      setActiveView('collaborations');
+    } else if (action === 'profile') {
+      setIsProfileModalOpen(true);
+    }
+  };
+
+  // Prompt authentication for restricted features
+  const handleRequireAuth = (actionType, reasonDescription, defaultIsSignUp = false) => {
+    pendingRestrictedAction.current = actionType;
+    const titleMap = {
+      save_venture: 'Save Your Venture Permanently',
+      my_ventures: 'My Ventures Cloud Access',
+      collaborations: 'Collaboration Network Access',
+      profile: 'Founder Profile Settings',
+    };
+    setAuthModalConfig({
+      isOpen: true,
+      reasonTitle: titleMap[actionType] || 'Account Required',
+      reasonDescription: reasonDescription || 'Sign in or create an account to access this feature.',
+      defaultIsSignUp,
+    });
+  };
 
   // Handler when ideas are generated from Problem Discovery
   const handleIdeasGenerated = async ({ problem, ideas }) => {
@@ -249,12 +358,12 @@ function AppContent() {
       budget: initialBudget,
     }));
 
-    // Requirement 3: Selected idea & named startup -> Venture Overview as the main workspace!
+    // Selected idea & named startup -> Venture Overview as the main workspace!
     setActiveView('overview');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Update startup name (Option A / Inline rename from Overview or Workspace)
+  // Update startup name
   const handleUpdateStartupName = async (newName) => {
     const trimmed = (newName || '').trim();
     if (!trimmed) return;
@@ -422,7 +531,6 @@ function AppContent() {
       chatHistory: [...(prev.chatHistory || []), newMsg],
     }));
 
-    // Save continuously to persistent storage & Supabase
     saveContinuousChatMessage(newMsg, projectState.projectId);
   };
 
@@ -445,12 +553,10 @@ function AppContent() {
           projectId: loaded.id,
           startupName: loaded.startupName || loaded.title,
           title: loaded.startupName || loaded.title,
-          // CRITICAL: Retain continuous chat history so co-pilot memory is never wiped!
           chatHistory: prev.chatHistory,
           apiKey: prev.apiKey,
         }));
 
-        // Requirement 5: Overview is the default workspace destination
         setActiveView('overview');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -468,7 +574,6 @@ function AppContent() {
   const handleStartNewProject = () => {
     setProjectState((prev) => ({
       ...initialProjectState,
-      // Retain continuous chat history across projects
       chatHistory: prev.chatHistory,
       apiKey: prev.apiKey,
     }));
@@ -476,17 +581,25 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Normalize view changes from anywhere in the app
+  // Normalize view changes from anywhere in the app with conditional auth checks
   const handleNavigateView = (view) => {
     if (view === 'ai-assistant') {
       setIsAIOpen(true);
       return;
     }
     if (view === 'profile') {
+      if (!user) {
+        handleRequireAuth('profile', 'Sign in or create an account to view and update your founder profile.');
+        return;
+      }
       setIsProfileModalOpen(true);
       return;
     }
     if (view === 'projects' || view === 'my-ventures') {
+      if (!user) {
+        handleRequireAuth('my_ventures', 'Sign in or create an account to view and manage your saved cloud ventures.');
+        return;
+      }
       setIsProjectsModalOpen(true);
       return;
     }
@@ -538,14 +651,41 @@ function AppContent() {
       {/* Universal Space Backdrop */}
       <SpaceBackdrop />
 
+      {/* Global Success Notification Toast */}
+      {saveSuccessMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '5.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 4000,
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))',
+            color: '#ffffff',
+            borderRadius: '9999px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            boxShadow: '0 8px 30px rgba(16, 185, 129, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+          }}
+        >
+          <CheckCircle2 size={16} />
+          <span>{saveSuccessMessage}</span>
+        </div>
+      )}
+
       {/* Global Glass Navigation */}
       <Navbar
         activeView={activeView}
         setActiveView={handleNavigateView}
-        hasActiveProject={Boolean(projectState.selectedIdea)}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        hasActiveProject={Boolean(projectState.selectedIdea || projectState.problem?.problemStatement)}
+        onOpenAuthModal={() => handleRequireAuth('general', 'Sign in to access your saved ventures and cloud workspace.')}
+        onOpenProjectsModal={() => handleNavigateView('projects')}
+        onOpenProfileModal={() => handleNavigateView('profile')}
       />
 
       {/* View Controller */}
@@ -556,8 +696,9 @@ function AppContent() {
               handleNavigateView('problem-discovery');
             }}
             onContinueVenture={(pId) => {
-              if (pId && pId !== projectState.projectId) {
-                handleSelectProject(pId);
+              const targetId = pId || cloudProjects[0]?.id;
+              if (targetId && targetId !== projectState.projectId) {
+                handleSelectProject(targetId);
               } else {
                 handleNavigateView('overview');
               }
@@ -567,6 +708,7 @@ function AppContent() {
             onWatchDemo={() => setIsHowItWorksOpen(true)}
             projectState={projectState}
             userProjects={cloudProjects}
+            isProjectsLoading={isProjectsLoading}
           />
           <AboutSection
             onExplore={() => {
@@ -591,14 +733,16 @@ function AppContent() {
           setActiveView={handleNavigateView}
           projectState={projectState}
           onOpenAssistant={() => setIsAIOpen(true)}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenProfile={() => handleNavigateView('profile')}
+          onSaveVenture={handleSaveVenture}
+          isSaving={isSaving}
         >
           {activeView === 'overview' && (
             <OverviewDashboard
               projectState={projectState}
               onNavigate={handleNavigateView}
               onOpenAssistant={() => setIsAIOpen(true)}
-              onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
+              onOpenProjectsModal={() => handleNavigateView('projects')}
               onSelectIdea={handleSelectIdea}
               onUpdateStartupName={handleUpdateStartupName}
               onUpdateProblemOnly={handleUpdateProblemOnly}
@@ -606,6 +750,8 @@ function AppContent() {
               userProjects={cloudProjects}
               onSelectProject={handleSelectProject}
               onStartNewProject={handleStartNewProject}
+              onSaveVenture={handleSaveVenture}
+              isSaving={isSaving}
             />
           )}
 
@@ -643,12 +789,15 @@ function AppContent() {
             <AnalyticsDashboard
               projectState={projectState}
               onNavigate={handleNavigateView}
-              onOpenProjectsModal={() => setIsProjectsModalOpen(true)}
+              onOpenProjectsModal={() => handleNavigateView('projects')}
             />
           )}
 
           {activeView === 'collaborations' && (
-            <CollaborationsHub projectState={projectState} />
+            <CollaborationsHub
+              projectState={projectState}
+              onRequireAuth={handleRequireAuth}
+            />
           )}
 
           {activeView === 'execution-plan' && (
@@ -663,6 +812,9 @@ function AppContent() {
                 handleNavigateView('budget-advisor');
               }}
               onStartJourney={handleStartJourneyOfficial}
+              onSaveVenture={handleSaveVenture}
+              isSaving={isSaving}
+              isCloudSaved={Boolean(user && projectState.projectId)}
             />
           )}
 
@@ -712,10 +864,14 @@ function AppContent() {
         }}
       />
 
-      {/* Auth Modal (Sign In / Sign Up) */}
+      {/* Auth Modal (Sign In / Sign Up) with Conditional Explanation */}
       <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        isOpen={authModalConfig.isOpen}
+        onClose={() => setAuthModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onSuccess={handleAuthSuccess}
+        reasonTitle={authModalConfig.reasonTitle}
+        reasonDescription={authModalConfig.reasonDescription}
+        defaultIsSignUp={authModalConfig.defaultIsSignUp}
       />
 
       {/* Profile & Account Settings Modal */}
@@ -731,6 +887,7 @@ function AppContent() {
         activeProjectId={projectState.projectId}
         onSelectProject={handleSelectProject}
         onStartNewProject={handleStartNewProject}
+        onOpenAuthModal={(title, desc) => handleRequireAuth('my_ventures', desc)}
       />
 
       {/* Persistent Context-Aware AI Assistant Drawer */}

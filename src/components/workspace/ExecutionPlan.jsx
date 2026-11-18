@@ -19,7 +19,8 @@ import {
   Filter,
   Plus,
   CheckSquare,
-  ListTodo
+  ListTodo,
+  CloudUpload
 } from 'lucide-react';
 
 export default function ExecutionPlan({
@@ -30,7 +31,10 @@ export default function ExecutionPlan({
   onAddTask,
   onProceedToBudget,
   onStartJourney,
-  journeyStarted
+  journeyStarted,
+  onSaveVenture,
+  isSaving = false,
+  isCloudSaved = false,
 }) {
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [expandedTasks, setExpandedTasks] = useState({});
@@ -139,6 +143,21 @@ export default function ExecutionPlan({
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {onSaveVenture && !isCloudSaved && (
+              <button
+                onClick={onSaveVenture}
+                disabled={isSaving}
+                className="btn-primary-glow"
+                style={{
+                  background: 'linear-gradient(135deg, #1d72fe 0%, #38bdf8 100%)',
+                }}
+                title="Save this venture and execution roadmap permanently"
+              >
+                <CloudUpload size={15} />
+                <span>{isSaving ? 'Saving...' : 'Save Venture'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setShowAddCustomModal(true)}
               className="btn-secondary-pill"

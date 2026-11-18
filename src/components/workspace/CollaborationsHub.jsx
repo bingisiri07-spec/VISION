@@ -443,7 +443,7 @@ function CreateSponsorshipForm({ userProjects, onCreated, onCancel }) {
 }
 
 // ─── MAIN COLLABORATIONS HUB ──────────────────────────────────────────────────
-export default function CollaborationsHub({ projectState }) {
+export default function CollaborationsHub({ projectState, onRequireAuth }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('browse');
   const [opportunities, setOpportunities] = useState([]);
@@ -586,22 +586,35 @@ export default function CollaborationsHub({ projectState }) {
               Connect with builders, mentors, and contributors. Post opportunities, discover collaborators, and find sponsorship support for your ventures.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {user ? (
-              <>
-                <button onClick={() => { setShowCreateOpp(true); setShowCreateSponsorship(false); setActiveTab('browse'); }} className="btn-secondary-pill">
-                  <Plus size={15} /><span>Post Opportunity</span>
-                </button>
-                <button onClick={() => { setShowCreateSponsorship(true); setShowCreateOpp(false); setActiveTab('sponsorship'); }} className="btn-secondary-pill">
-                  <DollarSign size={15} /><span>Seek Sponsorship</span>
-                </button>
-              </>
-            ) : (
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Info size={14} />
-                <span>Sign in to post or apply</span>
-              </div>
-            )}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                if (!user) {
+                  onRequireAuth?.('collaborations', 'Sign in or create an account to post a collaboration opportunity for your venture.');
+                } else {
+                  setShowCreateOpp(true);
+                  setShowCreateSponsorship(false);
+                  setActiveTab('browse');
+                }
+              }}
+              className="btn-secondary-pill"
+            >
+              <Plus size={15} /><span>Post Opportunity</span>
+            </button>
+            <button
+              onClick={() => {
+                if (!user) {
+                  onRequireAuth?.('collaborations', 'Sign in or create an account to seek sponsorship or grant support for your venture.');
+                } else {
+                  setShowCreateSponsorship(true);
+                  setShowCreateOpp(false);
+                  setActiveTab('sponsorship');
+                }
+              }}
+              className="btn-secondary-pill"
+            >
+              <DollarSign size={15} /><span>Seek Sponsorship</span>
+            </button>
             <button onClick={loadAll} disabled={loading} className="btn-secondary-pill" title="Refresh">
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>
@@ -679,7 +692,13 @@ export default function CollaborationsHub({ projectState }) {
                       key={opp.id}
                       opp={opp}
                       currentUserId={user?.id}
-                      onApply={(o) => setApplyTarget(o)}
+                      onApply={(o) => {
+                        if (!user) {
+                          onRequireAuth?.('collaborations', 'Sign in or create an account to express interest and apply to collaborate on this venture.');
+                        } else {
+                          setApplyTarget(o);
+                        }
+                      }}
                       onToggle={handleToggle}
                       onDelete={handleDeleteOpp}
                       myApplications={myApplications}
@@ -696,7 +715,14 @@ export default function CollaborationsHub({ projectState }) {
               {!user ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
                   <Info size={36} color="#38bdf8" style={{ margin: '0 auto 1rem auto' }} />
-                  <p style={{ color: 'var(--text-muted)' }}>Sign in to view your applications.</p>
+                  <h3 style={{ color: '#ffffff', fontWeight: 700, marginBottom: '0.5rem' }}>Account Required</h3>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Sign in to view your applications and collaboration history.</p>
+                  <button
+                    onClick={() => onRequireAuth?.('collaborations', 'Sign in to access your venture collaboration applications.')}
+                    className="btn-primary-glow"
+                  >
+                    <span>Sign In to Access</span>
+                  </button>
                 </div>
               ) : myApplications.length === 0 ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
@@ -743,7 +769,14 @@ export default function CollaborationsHub({ projectState }) {
               {!user ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
                   <Info size={36} color="#38bdf8" style={{ margin: '0 auto 1rem auto' }} />
-                  <p style={{ color: 'var(--text-muted)' }}>Sign in to view incoming collaboration requests.</p>
+                  <h3 style={{ color: '#ffffff', fontWeight: 700, marginBottom: '0.5rem' }}>Account Required</h3>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Sign in to view incoming collaboration requests from builders.</p>
+                  <button
+                    onClick={() => onRequireAuth?.('collaborations', 'Sign in to review incoming collaboration requests for your opportunities.')}
+                    className="btn-primary-glow"
+                  >
+                    <span>Sign In to Access</span>
+                  </button>
                 </div>
               ) : incomingApplications.length === 0 ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
@@ -807,7 +840,14 @@ export default function CollaborationsHub({ projectState }) {
               {!user ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
                   <Info size={36} color="#38bdf8" style={{ margin: '0 auto 1rem auto' }} />
-                  <p style={{ color: 'var(--text-muted)' }}>Sign in to view your collaborators.</p>
+                  <h3 style={{ color: '#ffffff', fontWeight: 700, marginBottom: '0.5rem' }}>Account Required</h3>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem' }}>Sign in to view your active collaborators and teammates.</p>
+                  <button
+                    onClick={() => onRequireAuth?.('collaborations', 'Sign in to access your venture collaborators and network.')}
+                    className="btn-primary-glow"
+                  >
+                    <span>Sign In to Access</span>
+                  </button>
                 </div>
               ) : (activeCollaborators.teamMembers.length === 0 && activeCollaborators.joinedVentures.length === 0) ? (
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>

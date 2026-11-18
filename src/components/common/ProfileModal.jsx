@@ -145,10 +145,13 @@ export default function ProfileModal({ isOpen, onClose }) {
         zIndex: 3000,
         backgroundColor: 'rgba(2, 6, 18, 0.85)',
         backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1.5rem',
+        padding: '1.5rem 1rem',
+        overflowY: 'auto',
+        overflowX: 'hidden',
       }}
       onClick={onClose}
     >
@@ -156,116 +159,150 @@ export default function ProfileModal({ isOpen, onClose }) {
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '480px',
-          padding: '2.25rem',
+          maxWidth: '500px',
+          maxHeight: 'min(90vh, 760px)',
+          display: 'flex',
+          flexDirection: 'column',
           position: 'relative',
+          padding: 0,
+          margin: 'auto',
           border: '1px solid rgba(56, 189, 248, 0.3)',
           boxShadow: '0 0 50px rgba(29, 114, 254, 0.35)',
+          overflow: 'hidden',
+          borderRadius: '16px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '1.25rem',
-            right: '1.25rem',
-            color: 'var(--text-silver)',
-            padding: '0.4rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-          }}
-          title="Close"
-        >
-          <X size={20} />
-        </button>
-
-        {/* Modal Header */}
-        <div style={{ marginBottom: '1.75rem' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: 'var(--cyan-glow)',
-              marginBottom: '0.35rem',
-            }}
-          >
-            <Sparkles size={14} />
-            <span>VISION Founder Account</span>
-          </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff' }}>
-            Account Settings
-          </h2>
-          <p style={{ color: 'var(--text-silver)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-            Manage your founder profile credentials and security.
-          </p>
-        </div>
-
-        {/* Navigation Tabs */}
+        {/* Pinned Modal Header & Navigation */}
         <div
           style={{
-            display: 'flex',
-            gap: '0.5rem',
-            marginBottom: '1.75rem',
-            padding: '0.25rem',
-            background: 'rgba(15, 23, 42, 0.65)',
-            borderRadius: '10px',
-            border: '1px solid rgba(56, 189, 248, 0.15)',
+            padding: '1.75rem 2rem 1.25rem 2rem',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            position: 'relative',
+            flexShrink: 0,
+            background: 'rgba(7, 18, 43, 0.95)',
           }}
         >
+          {/* Close Button */}
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={onClose}
             style={{
-              flex: 1,
+              position: 'absolute',
+              top: '1.25rem',
+              right: '1.25rem',
+              color: 'var(--text-silver)',
+              padding: '0.4rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.45rem',
-              padding: '0.55rem 0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              background: activeTab === 'profile' ? 'rgba(29, 114, 254, 0.3)' : 'transparent',
-              color: activeTab === 'profile' ? '#ffffff' : 'var(--text-muted)',
-              border: activeTab === 'profile' ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid transparent',
+              background: 'transparent',
+              border: 'none',
               transition: 'var(--transition-fast)',
             }}
+            title="Close"
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-silver)')}
           >
-            <User size={15} />
-            <span>Profile Details</span>
+            <X size={20} />
           </button>
 
-          <button
-            onClick={() => setActiveTab('security')}
+          {/* Modal Header */}
+          <div style={{ marginBottom: '1.25rem', paddingRight: '2rem' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--cyan-glow)',
+                marginBottom: '0.35rem',
+              }}
+            >
+              <Sparkles size={14} />
+              <span>VISION Founder Account</span>
+            </div>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+              Account Settings
+            </h2>
+            <p style={{ color: 'var(--text-silver)', fontSize: '0.85rem', marginTop: '0.25rem', marginBottom: 0 }}>
+              Manage your founder profile credentials and security.
+            </p>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div
             style={{
-              flex: 1,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.45rem',
-              padding: '0.55rem 0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              background: activeTab === 'security' ? 'rgba(29, 114, 254, 0.3)' : 'transparent',
-              color: activeTab === 'security' ? '#ffffff' : 'var(--text-muted)',
-              border: activeTab === 'security' ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid transparent',
-              transition: 'var(--transition-fast)',
+              gap: '0.5rem',
+              padding: '0.25rem',
+              background: 'rgba(15, 23, 42, 0.65)',
+              borderRadius: '10px',
+              border: '1px solid rgba(56, 189, 248, 0.15)',
             }}
           >
-            <ShieldCheck size={15} />
-            <span>Security & Password</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                padding: '0.55rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: activeTab === 'profile' ? 'rgba(29, 114, 254, 0.3)' : 'transparent',
+                color: activeTab === 'profile' ? '#ffffff' : 'var(--text-muted)',
+                border: activeTab === 'profile' ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid transparent',
+                transition: 'var(--transition-fast)',
+              }}
+            >
+              <User size={15} />
+              <span>Profile Details</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('security')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                padding: '0.55rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: activeTab === 'security' ? 'rgba(29, 114, 254, 0.3)' : 'transparent',
+                color: activeTab === 'security' ? '#ffffff' : 'var(--text-muted)',
+                border: activeTab === 'security' ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid transparent',
+                transition: 'var(--transition-fast)',
+              }}
+            >
+              <ShieldCheck size={15} />
+              <span>Security & Password</span>
+            </button>
+          </div>
         </div>
 
-        {/* TAB 1: PROFILE DETAILS */}
-        {activeTab === 'profile' && (
+        {/* Scrollable Form Body */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1.5rem 2rem 2rem 2rem',
+          }}
+        >
+          {/* TAB 1: PROFILE DETAILS */}
+          {activeTab === 'profile' && (
           <form onSubmit={handleSaveProfile}>
             {/* Feedback Banners */}
             {profileError && (
@@ -317,7 +354,7 @@ export default function ProfileModal({ isOpen, onClose }) {
                 <Mail size={16} color="var(--text-dim)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="email"
-                  value={user.email || ''}
+                  value={user?.email || ''}
                   disabled
                   readOnly
                   style={{
@@ -600,6 +637,7 @@ export default function ProfileModal({ isOpen, onClose }) {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

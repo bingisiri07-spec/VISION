@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getUserProjects, deleteCloudProject } from '../../services/projectService';
+import { useAuth } from '../../context/AuthContext';
 import {
   X,
   Plus,
@@ -9,7 +10,8 @@ import {
   Trash2,
   ArrowRight,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Lock
 } from 'lucide-react';
 
 export default function ProjectsModal({
@@ -18,16 +20,23 @@ export default function ProjectsModal({
   activeProjectId,
   onSelectProject,
   onStartNewProject,
+  onOpenAuthModal,
 }) {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
   const fetchProjects = async () => {
+    if (!user) {
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await getUserProjects();
-      setProjects(data);
+      setProjects(data || []);
     } catch (err) {
       console.error('Failed to load projects:', err);
     } finally {
@@ -39,7 +48,7 @@ export default function ProjectsModal({
     if (isOpen) {
       fetchProjects();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -159,7 +168,30 @@ export default function ProjectsModal({
             gap: '1rem',
           }}
         >
-          {loading ? (
+          {!user ? (
+            <div style={{ textAlign: 'center', padding: '3.5rem 1rem' }}>
+              <Lock size={44} color="#38bdf8" style={{ margin: '0 auto 1.25rem auto' }} />
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.5rem' }}>
+                Account Required to Access My Ventures
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-silver)', maxWidth: '440px', margin: '0 auto 1.5rem auto', lineHeight: 1.55 }}>
+                Sign in or create an account to view, switch, and manage your saved cloud ventures across all sessions.
+              </p>
+              <button
+                onClick={() => {
+                  onClose();
+                  if (onOpenAuthModal) {
+                    onOpenAuthModal('My Ventures Cloud Access', 'Sign in or create an account to view and manage your saved ventures.');
+                  }
+                }}
+                className="btn-primary-glow"
+                style={{ padding: '0.75rem 1.6rem', fontSize: '0.925rem' }}
+              >
+                <Sparkles size={15} />
+                <span>Sign In / Create Account</span>
+              </button>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-silver)' }}>
               Loading your ventures from Supabase...
             </div>

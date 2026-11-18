@@ -17,8 +17,11 @@ import {
   Layers,
   ArrowLeft,
   User,
-  Sparkles
+  Sparkles,
+  CloudUpload,
+  Check
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function WorkspaceShell({
   activeView,
@@ -26,12 +29,16 @@ export default function WorkspaceShell({
   projectState,
   onOpenAssistant,
   onOpenProfile,
+  onSaveVenture,
+  isSaving = false,
   children
 }) {
+  const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const hasIdea = Boolean(projectState.selectedIdea);
+  const isCloudSaved = Boolean(user && projectState.projectId);
 
   // Core navigation sections matching Prompt Section 3
   const navSections = [
@@ -397,26 +404,110 @@ export default function WorkspaceShell({
               </div>
             </div>
 
-            {/* Mobile Sidebar Hamburger Toggle */}
-            <button
-              onClick={() => setMobileDrawerOpen(true)}
-              className="mobile-sidebar-toggle"
+            {/* Top Bar Actions: Save Venture & Mobile Menu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {onSaveVenture && (
+                !isCloudSaved ? (
+                  <button
+                    onClick={onSaveVenture}
+                    disabled={isSaving}
+                    className="btn-primary-glow"
+                    style={{
+                      padding: '0.45rem 1.05rem',
+                      fontSize: '0.8rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                    }}
+                    title={!user ? "Create an account or sign in to save your venture permanently" : "Save this venture to your cloud account"}
+                  >
+                    <CloudUpload size={14} />
+                    <span>{isSaving ? 'Saving to Cloud...' : 'Save Venture'}</span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      fontSize: '0.78rem',
+                      color: 'var(--cyan-glow)',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '9999px',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                    }}
+                    title="Venture is securely saved to your Supabase cloud account"
+                  >
+                    <Check size={13} color="#38bdf8" />
+                    <span>Cloud Synced</span>
+                  </div>
+                )
+              )}
+
+              {/* Mobile Sidebar Hamburger Toggle */}
+              <button
+                onClick={() => setMobileDrawerOpen(true)}
+                className="mobile-sidebar-toggle"
+                style={{
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '8px',
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  color: '#ffffff',
+                  fontSize: '0.8rem'
+                }}
+              >
+                <Menu size={16} />
+                <span>Workspace Menu</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Guest Mode Indicator Banner */}
+          {!user && (projectState.problem?.problemStatement || projectState.selectedIdea) && (
+            <div
               style={{
-                display: 'none',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '8px',
-                background: 'rgba(15, 23, 42, 0.8)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                color: '#ffffff',
-                fontSize: '0.8rem'
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                padding: '0.75rem 1.25rem',
+                marginBottom: '1.75rem',
+                background: 'linear-gradient(90deg, rgba(29, 114, 254, 0.15), rgba(56, 189, 248, 0.08))',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                color: '#e2e8f0',
               }}
             >
-              <Menu size={16} />
-              <span>Workspace Menu</span>
-            </button>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Sparkles size={16} color="#38bdf8" />
+                <span>
+                  <strong>Guest Mode:</strong> You are exploring VISION in guest session. All analysis and AI features are live.
+                </span>
+              </div>
+              {onSaveVenture && (
+                <button
+                  onClick={onSaveVenture}
+                  className="btn-secondary-pill"
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    fontSize: '0.78rem',
+                    borderColor: 'rgba(56, 189, 248, 0.4)',
+                    color: 'var(--cyan-bright)',
+                  }}
+                >
+                  <CloudUpload size={13} />
+                  <span>Save Venture Permanently</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Render Active View Content */}
           {children}

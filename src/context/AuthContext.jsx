@@ -63,13 +63,15 @@ export function AuthProvider({ children }) {
 
   // Sign up with Email + Password and optional Full Name
   const signUp = async ({ email, password, fullName }) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: {
         data: {
-          full_name: fullName || '',
+          full_name: (fullName || '').trim(),
         },
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
       },
     });
     if (error) throw error;
@@ -78,8 +80,9 @@ export function AuthProvider({ children }) {
 
   // Sign in with Email + Password
   const signIn = async ({ email, password }) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     });
     if (error) throw error;

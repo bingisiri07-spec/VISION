@@ -10,14 +10,26 @@ export default function HeroSection({
   projectState,
   userProjects = [],
   onSelectVenture,
+  isProjectsLoading = false,
 }) {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const founderName = profile?.full_name?.trim() || user?.user_metadata?.full_name?.trim() || 'Founder';
 
-  // Check if returning user with active or cloud ventures
+  // Loading state handling to prevent flashing the wrong button while fetching saved ventures
+  const isAuthenticated = Boolean(user);
+  const isLoading = authLoading || (isAuthenticated && isProjectsLoading);
+
+  // Requirement 5:
+  // - Guest User: NEVER show "Continue Your Venture", show clean homepage with "Start Your Journey"
+  // - Authenticated User with no ventures: show "Start Your First Venture" (no "Continue Your Venture")
+  // - Authenticated User with existing ventures: show "Continue Your Venture" card
+  const hasSavedVentures = !isLoading && isAuthenticated && Array.isArray(userProjects) && userProjects.length > 0;
+
+  // Active venture metadata for authenticated user with ventures
   const activeIdea = projectState?.selectedIdea;
-  const activeStartupName = projectState?.startupName || projectState?.title || activeIdea?.name || userProjects?.[0]?.startup_name || userProjects?.[0]?.title || '';
-  const hasSavedVenture = Boolean(activeStartupName || activeIdea || (userProjects && userProjects.length > 0));
+  const activeStartupName = (userProjects && userProjects.length > 0)
+    ? (userProjects[0]?.startup_name || userProjects[0]?.title || projectState?.startupName || projectState?.title || '')
+    : (projectState?.startupName || projectState?.title || activeIdea?.name || '');
 
   const totalTasks = projectState?.tasks || [];
   const completedTasks = totalTasks.filter((t) => t.completed);
@@ -65,10 +77,15 @@ export default function HeroSection({
               marginBottom: '1.5rem',
             }}
           >
-            {hasSavedVenture ? (
+            {hasSavedVentures ? (
               <>
                 <Sparkles size={14} color="#38bdf8" />
                 <span>ACTIVE WORKSPACE // WELCOME BACK, {founderName.toUpperCase()}</span>
+              </>
+            ) : isAuthenticated ? (
+              <>
+                <Sparkles size={14} color="#38bdf8" />
+                <span>WELCOME, {founderName.toUpperCase()} // READY TO BUILD</span>
               </>
             ) : (
               <>
@@ -102,8 +119,8 @@ export default function HeroSection({
             VISION
           </h1>
 
-          {/* Conditional: Returning User with Saved Venture vs New User */}
-          {hasSavedVenture ? (
+          {/* Conditional: Returning User with Saved Venture vs New / No-Ventures User */}
+          {hasSavedVentures ? (
             <div style={{ marginBottom: '2rem' }}>
               <div
                 style={{
@@ -319,11 +336,11 @@ export default function HeroSection({
                 }}
               >
                 <button
-                  onClick={onStartJourney}
+                  onClick={isAuthenticated ? (onStartNewVenture || onStartJourney) : onStartJourney}
                   className="btn-primary-glow"
                   style={{ padding: '0.95rem 2.2rem', fontSize: '1.025rem' }}
                 >
-                  <span>Start Your Journey</span>
+                  <span>{isAuthenticated ? 'Start Your First Venture' : 'Start Your Journey'}</span>
                   <ArrowRight size={18} />
                 </button>
 

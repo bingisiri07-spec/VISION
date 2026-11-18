@@ -23,7 +23,8 @@ import {
   Edit3,
   Building2,
   HelpCircle,
-  IndianRupee
+  IndianRupee,
+  CloudUpload
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getAllUserVenturesSummary, getUserProjects } from '../../services/projectService';
@@ -42,7 +43,9 @@ export default function OverviewDashboard({
   onExploreNewDirection,
   userProjects = [],
   onSelectProject,
-  onStartNewProject
+  onStartNewProject,
+  onSaveVenture,
+  isSaving = false,
 }) {
   const { user, profile } = useAuth();
   const [crossVentureData, setCrossVentureData] = useState(null);
@@ -329,6 +332,23 @@ export default function OverviewDashboard({
 
           {/* Quick Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {!projectState.projectId && onSaveVenture && (
+              <button
+                onClick={onSaveVenture}
+                disabled={isSaving}
+                className="btn-primary-glow"
+                style={{
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.875rem',
+                  background: 'linear-gradient(135deg, #1d72fe 0%, #38bdf8 100%)',
+                }}
+                title={!user ? "Sign in or register to save this venture permanently" : "Save this venture to your cloud account"}
+              >
+                <CloudUpload size={15} />
+                <span>{isSaving ? 'Saving...' : 'Save Venture'}</span>
+              </button>
+            )}
+
             {activeIdea ? (
               <button
                 onClick={() => onNavigate('execution-plan')}
